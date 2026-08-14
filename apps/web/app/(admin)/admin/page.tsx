@@ -1,56 +1,116 @@
-const dashboardItems = [
-  {
-    title: "Pages",
-    description: "Create and organize public-facing pages backed by PostgreSQL.",
-  },
-  {
-    title: "Publishing",
-    description: "Track draft-to-published flow from a single admin surface.",
-  },
-  {
-    title: "API",
-    description: "Expose clean content endpoints for your frontend routes.",
-  },
-];
+import Link from "next/link";
+
+import { KpiCard } from "@/components/admin/kpi-card";
+import {
+  BookingStatusBadge,
+  RefundStatusBadge,
+} from "@/components/booking/status-badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { bookings, kpis, pendingRefunds } from "@/lib/mock-data";
+import { formatDateRange, formatVnd } from "@/lib/format";
 
 export default function AdminDashboardPage() {
-  return (
-    <div className="fade-up flex min-h-full flex-col gap-8">
-      <header className="space-y-3 border-b border-line pb-6">
-        <p className="font-mono text-xs uppercase tracking-[0.24em] text-accent">
-          Admin dashboard
-        </p>
-        <h2 className="text-4xl font-semibold tracking-tight text-navy">
-          Start shaping the CMS from a focused editorial workspace.
-        </h2>
-        <p className="max-w-2xl text-base leading-8 text-muted">
-          This placeholder dashboard is intentionally lean: one place to extend
-          page CRUD, publishing states, and future content tools.
-        </p>
-      </header>
+  const latestBookings = bookings.slice(0, 2);
 
-      <section className="grid gap-4 xl:grid-cols-3">
-        {dashboardItems.map((item) => (
-          <article
-            key={item.title}
-            className="rounded-[1.5rem] border border-line bg-white/70 p-5"
-          >
-            <h3 className="text-xl font-semibold text-navy">{item.title}</h3>
-            <p className="mt-3 text-sm leading-7 text-muted">
-              {item.description}
-            </p>
-          </article>
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
+          Tổng quan vận hành khách sạn
+        </p>
+      </div>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {kpis.map((kpi) => (
+          <KpiCard key={kpi.label} label={kpi.label} value={kpi.value} />
         ))}
       </section>
 
-      <section className="rounded-[1.75rem] border border-line bg-[linear-gradient(135deg,rgba(18,32,51,0.96),rgba(17,94,89,0.92))] p-6 text-white">
-        <p className="font-mono text-xs uppercase tracking-[0.24em] text-white/65">
-          Next implementation step
-        </p>
-        <p className="mt-3 max-w-2xl text-lg leading-8 text-white/88">
-          Connect this dashboard to `/api/pages`, then replace the placeholders
-          with real content tables and forms.
-        </p>
+      <section className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle>Yêu cầu hoàn tiền cần xử lý</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/admin/refunds">Xem tất cả</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mã</TableHead>
+                  <TableHead>Khách</TableHead>
+                  <TableHead>Số tiền</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingRefunds.map((refund) => (
+                  <TableRow key={refund.id}>
+                    <TableCell>{refund.id}</TableCell>
+                    <TableCell>{refund.customer_name}</TableCell>
+                    <TableCell>{formatVnd(refund.refund_amount)}</TableCell>
+                    <TableCell>
+                      <RefundStatusBadge status={refund.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle>Đơn đặt phòng mới nhất</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/admin/bookings">Xem tất cả</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mã</TableHead>
+                  <TableHead>Khách</TableHead>
+                  <TableHead>Ngày ở</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {latestBookings.map((booking) => (
+                  <TableRow key={booking.id}>
+                    <TableCell>
+                      <Link
+                        href={`/admin/bookings/${booking.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {booking.id}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{booking.user_name}</TableCell>
+                    <TableCell>
+                      {formatDateRange(booking.check_in, booking.check_out)}
+                    </TableCell>
+                    <TableCell>
+                      <BookingStatusBadge status={booking.trang_thai} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </section>
     </div>
   );

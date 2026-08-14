@@ -1,0 +1,1578 @@
+openapi: 3.0.3
+info:
+  title: HotelBook API
+  version: 1.0.0
+  description: |
+    REST API suy ra từ các màn hình frontend (`apps/web`) và tài liệu
+    [`screens.md`](./screens.md), map với ERD [`sql/erd.md`](./sql/erd.md).
+
+    **Quy ước**
+    - Prefix `/api/v1`
+    - JWT Bearer tách biệt: khách (`USERS`) vs admin (`ADMINS`)
+    - ID tài nguyên là `integer` theo schema; mã hiển thị (`DP-0002`, `RF-01`)
+      do server format
+    - Giỏ đặt phòng (P4) giữ phía client; checkout gửi `phong_ids` + ngày + method
+    - `description` / `image` trên loại phòng có trên UI nhưng chưa có trong ERD
+      — schema đánh dấu `nullable` để frontend không gãy khi backend chưa lưu
+
+    Mở file này trên https://editor.swagger.io để xem Swagger UI.
+servers:
+  - url: http://localhost:8001
+    description: Local (docker-compose / FastAPI)
+tags:
+  - name: Health
+  - name: Auth
+    description: P5 — đăng ký / đăng nhập khách hàng
+  - name: RoomTypes
+    description: P1, P3 — loại phòng công khai
+  - name: Rooms
+    description: P2, P4 — tìm phòng trống
+  - name: Bookings
+    description: P6–P9 — đặt phòng, lịch sử, hủy
+  - name: AdminAuth
+    description: A1 — đăng nhập quản trị
+  - name: AdminDashboard
+    description: A2
+  - name: AdminRoomTypes
+    description: A3 — CRUD loại phòng
+  - name: AdminRooms
+    description: A4 — CRUD phòng
+  - name: AdminBookings
+    description: A5, A6
+  - name: AdminPayments
+    description: A7
+  - name: AdminRefunds
+    description: A8
+  - name: AdminCustomers
+    description: A9
+  - name: AdminStaff
+    description: A10
+
+components:
+  securitySchemes:
+    UserBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token sau POST /api/v1/auth/login hoặc /register
+    AdminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token sau POST /api/v1/admin/auth/login
+
+  parameters:
+    IdPath:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+    PageQuery:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSizeQuery:
+      in: query
+      name: page_size
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    SearchQuery:
+      in: query
+      name: q
+      schema:
+        type: string
+      description: Từ khóa tìm kiếm (tên, email, mã đơn, số phòng, …)
+
+  schemas:
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RegisterRequest:
+      type: object
+      required: [email, password, full_name]
+      properties:
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+          minLength: 6
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        full_name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [ACTIVE, LOCKED]
+
+    RoomType:
+      type: object
+      properties:
+        id:
+          type: integer
+        ten_loai:
+          type: string
+        gia_co_ban:
+          type: number
+          format: double
+        description:
+          type: string
+          nullable: true
+          description: Có trên UI; chưa có cột ERD
+        image:
+          type: string
+          nullable: true
+          description: Có trên UI; chưa có cột ERD
+        room_count:
+          type: integer
+          description: Số phòng thuộc loại (A3)
+
+    Room:
+      type: object
+      properties:
+        id:
+          type: integer
+        so_phong:
+          type: string
+        loai_phong_id:
+          type: integer
+        trang_thai:
+          type: string
+          enum: [AVAILABLE, OCCUPIED, MAINTENANCE]
+        ten_loai:
+          type: string
+        gia_co_ban:
+          type: number
+          format: double
+
+    AvailabilityItem:
+      allOf:
+        - $ref: "#/components/schemas/Room"
+        - type: object
+          properties:
+            available:
+              type: boolean
+
+    RoomTypeDetail:
+      allOf:
+        - $ref: "#/components/schemas/RoomType"
+        - type: object
+          properties:
+            available_rooms:
+              type: array
+              items:
+                $ref: "#/components/schemas/Room"
+
+    BookingRoom:
+      type: object
+      properties:
+        phong_id:
+          type: integer
+        so_phong:
+          type: string
+        ten_loai:
+          type: string
+        don_gia:
+          type: number
+          format: double
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: number
+          format: double
+        method:
+          type: string
+          enum: [BANKING, CASH]
+        status:
+          type: string
+          enum: [PENDING, PAID, FAILED]
+        created_at:
+          type: string
+          format: date-time
+
+    PaymentRecord:
+      allOf:
+        - $ref: "#/components/schemas/Payment"
+        - type: object
+          properties:
+            booking_id:
+              type: integer
+            booking_code:
+              type: string
+              example: DP-0002
+            customer_name:
+              type: string
+
+    Refund:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+          example: RF-01
+        booking_id:
+          type: integer
+        booking_code:
+          type: string
+        payment_id:
+          type: integer
+        refund_amount:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [REQUESTED, APPROVED, REJECTED]
+        reason:
+          type: string
+          nullable: true
+        customer_name:
+          type: string
+        approved_by:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+          example: DP-0002
+        user_id:
+          type: integer
+        user_name:
+          type: string
+        user_email:
+          type: string
+        user_phone:
+          type: string
+          nullable: true
+        check_in:
+          type: string
+          format: date
+        check_out:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+        trang_thai:
+          type: string
+          enum: [PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED]
+        rooms:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookingRoom"
+        total:
+          type: number
+          format: double
+          description: don_gia × số đêm × số phòng
+        payment:
+          $ref: "#/components/schemas/Payment"
+        refund:
+          $ref: "#/components/schemas/Refund"
+
+    CheckoutRequest:
+      type: object
+      required: [check_in, check_out, phong_ids, method]
+      properties:
+        check_in:
+          type: string
+          format: date
+        check_out:
+          type: string
+          format: date
+        phong_ids:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+        method:
+          type: string
+          enum: [BANKING, CASH]
+
+    CancelRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+
+    Dashboard:
+      type: object
+      properties:
+        pending_count:
+          type: integer
+        confirmed_count:
+          type: integer
+        monthly_revenue:
+          type: number
+          format: double
+        rooms_available:
+          type: integer
+        rooms_occupied:
+          type: integer
+        pending_refunds_count:
+          type: integer
+        pending_refunds:
+          type: array
+          items:
+            $ref: "#/components/schemas/Refund"
+        latest_bookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+
+    RoomTypeWrite:
+      type: object
+      required: [ten_loai, gia_co_ban]
+      properties:
+        ten_loai:
+          type: string
+        gia_co_ban:
+          type: number
+          format: double
+          minimum: 0
+
+    RoomWrite:
+      type: object
+      required: [so_phong, loai_phong_id, trang_thai]
+      properties:
+        so_phong:
+          type: string
+        loai_phong_id:
+          type: integer
+        trang_thai:
+          type: string
+          enum: [AVAILABLE, OCCUPIED, MAINTENANCE]
+
+    StatusPatch:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    BookingStatusPatch:
+      type: object
+      required: [trang_thai]
+      properties:
+        trang_thai:
+          type: string
+          enum: [CONFIRMED, CHECKED_IN, CHECKED_OUT]
+          description: |
+            PENDING → CONFIRMED (Xác nhận đơn)
+            CONFIRMED → CHECKED_IN (Nhận phòng)
+            CHECKED_IN → CHECKED_OUT (Trả phòng)
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [ACTIVE, LOCKED]
+
+    AdminAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+        role:
+          type: string
+          enum: [SUPER_ADMIN, STAFF]
+        status:
+          type: string
+          enum: [ACTIVE, LOCKED]
+
+    AdminWrite:
+      type: object
+      required: [full_name, email, role]
+      properties:
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          description: Bắt buộc khi tạo; tùy chọn khi sửa
+        role:
+          type: string
+          enum: [SUPER_ADMIN, STAFF]
+
+    Role:
+      type: object
+      properties:
+        code:
+          type: string
+          example: SUPER_ADMIN
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          example: [MANAGE_ROOM, MANAGE_BOOKING, MANAGE_PAYMENT, APPROVE_REFUND]
+
+    PageMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+
+    PaginatedBookings:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Booking"
+
+    PaginatedRoomTypes:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/RoomType"
+
+    PaginatedRooms:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Room"
+
+    PaginatedPayments:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/PaymentRecord"
+
+    PaginatedRefunds:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Refund"
+
+    PaginatedCustomers:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Customer"
+
+    PaginatedAdmins:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminAccount"
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Đăng ký khách hàng
+      description: P5 — tab Đăng ký. Tạo `USERS` rồi trả JWT.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "409":
+          description: Email đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Đăng nhập khách hàng
+      description: P5 — tab Đăng nhập
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Sai thông tin đăng nhập
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Đăng xuất khách hàng
+      description: Header public — Đăng xuất
+      operationId: logoutUser
+      security:
+        - UserBearer: []
+      responses:
+        "204":
+          description: No Content
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Thông tin khách đang đăng nhập
+      description: Header (tên user). P10 chưa có UI — có thể dùng sau để sửa profile.
+      operationId: getCurrentUser
+      security:
+        - UserBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /api/v1/room-types:
+    get:
+      tags: [RoomTypes]
+      summary: Danh sách loại phòng
+      description: P1 — section Loại phòng của chúng tôi
+      operationId: listPublicRoomTypes
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoomType"
+
+  /api/v1/room-types/{id}:
+    get:
+      tags: [RoomTypes]
+      summary: Chi tiết loại phòng
+      description: P3 — kèm phòng còn trống trong khoảng ngày nếu truyền check_in/check_out
+      operationId: getPublicRoomType
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+        - in: query
+          name: check_in
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: check_out
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomTypeDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/rooms/availability:
+    get:
+      tags: [Rooms]
+      summary: Tìm phòng trống
+      description: |
+        P2 — kết quả tìm phòng. P4 — nút Áp dụng ngày nên gọi lại endpoint này.
+
+        Phòng trống khi không có `CT_DATPHONG` gắn `DATPHONG` giao khoảng
+        check_in–check_out và `trang_thai ≠ CANCELLED`, đồng thời
+        `PHONG.trang_thai ≠ MAINTENANCE`.
+      operationId: searchAvailability
+      parameters:
+        - in: query
+          name: check_in
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: check_out
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: loai_phong_id
+          schema:
+            type: integer
+          description: Bỏ trống = tất cả loại
+        - in: query
+          name: count
+          schema:
+            type: integer
+            minimum: 1
+          description: Số phòng khách muốn đặt (UI P1/P2)
+        - in: query
+          name: min_price
+          schema:
+            type: number
+        - in: query
+          name: max_price
+          schema:
+            type: number
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AvailabilityItem"
+        "400":
+          description: Ngày không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/bookings:
+    get:
+      tags: [Bookings]
+      summary: Đặt phòng của tôi
+      description: P8 — lọc theo trạng thái
+      operationId: listMyBookings
+      security:
+        - UserBearer: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED]
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBookings"
+    post:
+      tags: [Bookings]
+      summary: Checkout giả lập
+      description: |
+        P6 — Xác nhận thanh toán. Một request tạo `DATPHONG` + `CT_DATPHONG`
+        + `PAYMENTS` (`status=PAID`) và đặt `DATPHONG.trang_thai=CONFIRMED`.
+        Kiểm tra phòng còn trống trong transaction; 409 nếu bị đặt mất.
+      operationId: checkoutBooking
+      security:
+        - UserBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "409":
+          description: Phòng đã bị đặt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/bookings/{id}:
+    get:
+      tags: [Bookings]
+      summary: Chi tiết đơn của tôi
+      description: P7, P9
+      operationId: getMyBooking
+      security:
+        - UserBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/bookings/{id}/cancel:
+    post:
+      tags: [Bookings]
+      summary: Hủy đặt phòng — tạo yêu cầu hoàn tiền
+      description: |
+        P9 — dialog Hủy đặt phòng. Tạo `REFUNDS` với `status=REQUESTED`.
+        Chỉ khi đơn `PENDING`/`CONFIRMED` và chưa có refund REQUESTED/APPROVED.
+      operationId: cancelMyBooking
+      security:
+        - UserBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelRequest"
+      responses:
+        "201":
+          description: Refund REQUESTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Refund"
+        "400":
+          description: Không đủ điều kiện hủy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/auth/login:
+    post:
+      tags: [AdminAuth]
+      summary: Đăng nhập admin
+      description: A1 — bảng `ADMINS`, tách biệt `USERS`
+      operationId: loginAdmin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Sai thông tin đăng nhập
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/auth/logout:
+    post:
+      tags: [AdminAuth]
+      summary: Đăng xuất admin
+      operationId: logoutAdmin
+      security:
+        - AdminBearer: []
+      responses:
+        "204":
+          description: No Content
+
+  /api/v1/admin/auth/me:
+    get:
+      tags: [AdminAuth]
+      summary: Admin đang đăng nhập
+      description: A2 sidebar — tên / vai trò
+      operationId: getCurrentAdmin
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccount"
+
+  /api/v1/admin/dashboard:
+    get:
+      tags: [AdminDashboard]
+      summary: Dashboard tổng quan
+      description: A2 — KPI, refund chờ duyệt, đơn mới nhất
+      operationId: getAdminDashboard
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+
+  /api/v1/admin/room-types:
+    get:
+      tags: [AdminRoomTypes]
+      summary: Danh sách loại phòng
+      description: A3
+      operationId: listAdminRoomTypes
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedRoomTypes"
+    post:
+      tags: [AdminRoomTypes]
+      summary: Tạo loại phòng
+      description: A3 — /admin/room-types/new
+      operationId: createRoomType
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomTypeWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomType"
+
+  /api/v1/admin/room-types/{id}:
+    get:
+      tags: [AdminRoomTypes]
+      summary: Chi tiết loại phòng (form sửa)
+      operationId: getAdminRoomType
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomType"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [AdminRoomTypes]
+      summary: Cập nhật loại phòng
+      description: A3 — /admin/room-types/{id}/edit
+      operationId: updateRoomType
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomTypeWrite"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomType"
+    delete:
+      tags: [AdminRoomTypes]
+      summary: Xóa loại phòng
+      description: A3 — chặn nếu còn `PHONG` tham chiếu
+      operationId: deleteRoomType
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: Deleted
+        "409":
+          description: Còn phòng thuộc loại này
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/rooms:
+    get:
+      tags: [AdminRooms]
+      summary: Danh sách phòng
+      description: A4 — lọc loại / trạng thái / số phòng
+      operationId: listAdminRooms
+      security:
+        - AdminBearer: []
+      parameters:
+        - in: query
+          name: loai_phong_id
+          schema:
+            type: integer
+        - in: query
+          name: trang_thai
+          schema:
+            type: string
+            enum: [AVAILABLE, OCCUPIED, MAINTENANCE]
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedRooms"
+    post:
+      tags: [AdminRooms]
+      summary: Tạo phòng
+      description: A4 — /admin/rooms/new
+      operationId: createRoom
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "409":
+          description: Số phòng trùng
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/rooms/{id}:
+    get:
+      tags: [AdminRooms]
+      summary: Chi tiết phòng (form sửa)
+      operationId: getAdminRoom
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [AdminRooms]
+      summary: Cập nhật phòng
+      description: A4 — /admin/rooms/{id}/edit
+      operationId: updateRoom
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomWrite"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+    delete:
+      tags: [AdminRooms]
+      summary: Xóa phòng
+      description: A4 — chặn nếu phòng đang gắn đơn chưa hoàn tất
+      operationId: deleteRoom
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: Deleted
+        "409":
+          description: Phòng đang trong đơn chưa hoàn tất
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/rooms/{id}/status:
+    patch:
+      tags: [AdminRooms]
+      summary: Đổi trạng thái vận hành
+      description: A4 — nút Bảo trì
+      operationId: patchRoomStatus
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusPatch"
+            example:
+              status: MAINTENANCE
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+
+  /api/v1/admin/bookings:
+    get:
+      tags: [AdminBookings]
+      summary: Danh sách đặt phòng
+      description: A5 — lọc trạng thái, khoảng ngày, mã/tên; A9 — lọc theo user_id
+      operationId: listAdminBookings
+      security:
+        - AdminBearer: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED]
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedBookings"
+
+  /api/v1/admin/bookings/{id}:
+    get:
+      tags: [AdminBookings]
+      summary: Chi tiết đặt phòng (admin)
+      description: A6
+      operationId: getAdminBooking
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/bookings/{id}/status:
+    patch:
+      tags: [AdminBookings]
+      summary: Chuyển trạng thái đơn
+      description: A6 — Xác nhận đơn / Nhận phòng / Trả phòng
+      operationId: patchAdminBookingStatus
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingStatusPatch"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Chuyển trạng thái không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/payments:
+    get:
+      tags: [AdminPayments]
+      summary: Danh sách thanh toán
+      description: A7
+      operationId: listAdminPayments
+      security:
+        - AdminBearer: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, PAID, FAILED]
+        - in: query
+          name: method
+          schema:
+            type: string
+            enum: [BANKING, CASH]
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPayments"
+
+  /api/v1/admin/refunds:
+    get:
+      tags: [AdminRefunds]
+      summary: Danh sách yêu cầu hoàn tiền
+      description: A8
+      operationId: listAdminRefunds
+      security:
+        - AdminBearer: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [REQUESTED, APPROVED, REJECTED]
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedRefunds"
+
+  /api/v1/admin/refunds/{id}/approve:
+    post:
+      tags: [AdminRefunds]
+      summary: Duyệt hoàn tiền
+      description: |
+        A8 — Duyệt. `REFUNDS.status=APPROVED`, `approved_by` = admin hiện tại,
+        `DATPHONG.trang_thai=CANCELLED`.
+      operationId: approveRefund
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Refund"
+        "400":
+          description: Không ở trạng thái REQUESTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/refunds/{id}/reject:
+    post:
+      tags: [AdminRefunds]
+      summary: Từ chối hoàn tiền
+      description: A8 — Từ chối. `REFUNDS.status=REJECTED`. Đơn giữ nguyên.
+      operationId: rejectRefund
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Refund"
+        "400":
+          description: Không ở trạng thái REQUESTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/customers:
+    get:
+      tags: [AdminCustomers]
+      summary: Danh sách khách hàng
+      description: A9
+      operationId: listAdminCustomers
+      security:
+        - AdminBearer: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, LOCKED]
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedCustomers"
+
+  /api/v1/admin/customers/{id}/status:
+    patch:
+      tags: [AdminCustomers]
+      summary: Khóa / mở tài khoản khách
+      description: A9 — nút Khóa
+      operationId: patchCustomerStatus
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusPatch"
+            example:
+              status: LOCKED
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+
+  /api/v1/admin/admins:
+    get:
+      tags: [AdminStaff]
+      summary: Danh sách tài khoản admin
+      description: A10
+      operationId: listAdmins
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedAdmins"
+    post:
+      tags: [AdminStaff]
+      summary: Tạo tài khoản admin
+      description: A10 — /admin/staff/new
+      operationId: createAdmin
+      security:
+        - AdminBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccount"
+        "409":
+          description: Email đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/v1/admin/admins/{id}:
+    get:
+      tags: [AdminStaff]
+      summary: Chi tiết admin (form sửa)
+      operationId: getAdmin
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccount"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: [AdminStaff]
+      summary: Cập nhật admin
+      description: A10 — /admin/staff/{id}/edit. Password tùy chọn.
+      operationId: updateAdmin
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminWrite"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccount"
+
+  /api/v1/admin/admins/{id}/status:
+    patch:
+      tags: [AdminStaff]
+      summary: Khóa tài khoản admin
+      description: A10 — nút Khóa
+      operationId: patchAdminStatus
+      security:
+        - AdminBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusPatch"
+            example:
+              status: LOCKED
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccount"
+
+  /api/v1/admin/roles:
+    get:
+      tags: [AdminStaff]
+      summary: Vai trò và quyền (chỉ xem)
+      description: A10 — card Vai trò & quyền
+      operationId: listRoles
+      security:
+        - AdminBearer: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Role"
