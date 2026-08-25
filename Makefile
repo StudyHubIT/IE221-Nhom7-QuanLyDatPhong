@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: install run up down logs migrate migration shell-api shell-web
+.PHONY: install run up down logs migrate migration seed shell-api shell-web
 
 install:
 	pnpm install
@@ -24,6 +24,9 @@ migrate:
 migration:
 	@if [ -z "$(name)" ]; then echo "Usage: make migration name=create_pages_table"; exit 1; fi
 	cd backend && poetry run alembic revision --autogenerate -m "$(name)"
+
+seed:
+	cd backend && poetry run python -m app.db_seed
 
 shell-api:
 	cd backend && poetry run bash

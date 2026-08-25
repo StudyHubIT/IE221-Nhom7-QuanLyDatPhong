@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Banknote,
   BedDouble,
@@ -10,10 +10,12 @@ import {
   CreditCard,
   LayoutDashboard,
   Layers,
+  LogOut,
   Shield,
   Users,
 } from "lucide-react";
 
+import { useAdminSession } from "@/components/auth/session-provider";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -27,8 +29,28 @@ const items = [
   { href: "/admin/staff", label: "Tài khoản admin", icon: Shield },
 ];
 
+function initials(name: string | null): string {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
+  return (first + last).toUpperCase();
+}
+
+const roleLabel: Record<string, string> = {
+  SUPER_ADMIN: "Super Admin",
+  STAFF: "Nhân viên",
+};
+
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { session, logout } = useAdminSession();
+
+  function onLogout() {
+    logout();
+    router.push("/admin/login");
+  }
 
   return (
     <aside className="flex h-full min-h-screen w-[260px] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
@@ -65,10 +87,27 @@ export function AdminSidebar() {
       </nav>
 
       <div className="mt-auto flex items-center gap-3 border-t border-sidebar-border px-5 py-4">
-        <span className="flex size-8 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold">
-          SA
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold">
+          {initials(session?.admin.full_name ?? null)}
         </span>
-        <span className="text-sm">Super Admin</span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm">
+            {session?.admin.full_name ?? session?.admin.email ?? "—"}
+          </p>
+          {session ? (
+            <p className="truncate text-xs text-sidebar-foreground/60">
+              {roleLabel[session.admin.role] ?? session.admin.role}
+            </p>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={onLogout}
+          title="Đăng xuất"
+          className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <LogOut className="size-4" />
+        </button>
       </div>
     </aside>
   );
