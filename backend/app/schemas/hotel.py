@@ -64,6 +64,8 @@ class RegisterRequest(BaseModel):
 
 
 class User(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     email: str
     phone: str | None = None
@@ -210,6 +212,8 @@ class Customer(BaseModel):
 
 
 class AdminAccount(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     full_name: str | None = None
     email: str

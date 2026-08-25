@@ -33,8 +33,12 @@ app = FastAPI(
     version="1.0.0",
     description=(
         "REST API hệ thống quản lý đặt phòng, map từ "
-        "`documents/openapi.yaml`. Endpoint hiện là stub, chưa nối database. "
-        "Authorize với token bất kỳ (ví dụ `stub`) để thử các route cần JWT."
+        "`documents/openapi.yaml`. Auth/user/room-type đã nối PostgreSQL; các "
+        "endpoint còn lại (booking, payment, refund, admin CRUD) vẫn là stub, "
+        "đang được 4 task còn lại hiện thực (xem `phan_cong_cong_viec.md`). "
+        "Để thử route cần đăng nhập: gọi `POST /api/v1/auth/login` hoặc "
+        "`POST /api/v1/admin/auth/login` để lấy `access_token` thật rồi "
+        "Authorize bằng token đó (không còn chấp nhận token giả bất kỳ)."
     ),
     openapi_tags=OPENAPI_TAGS,
 )

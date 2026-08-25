@@ -1,19 +1,48 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, LogIn } from "lucide-react";
 
+import { useAdminSession } from "@/components/auth/session-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { apiFetch, ApiError } from "@/lib/api";
+import type { AdminProfile } from "@/lib/session";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { login } = useAdminSession();
 
-  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push("/admin");
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const { access_token } = await apiFetch<{ access_token: string }>(
+        "/api/v1/admin/auth/login",
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        },
+      );
+      const admin = await apiFetch<AdminProfile>("/api/v1/admin/auth/me", {
+        token: access_token,
+      });
+      login({ token: access_token, admin });
+      router.push("/admin");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Đăng nhập thất bại");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -38,7 +67,9 @@ export default function AdminLoginPage() {
                 <Input
                   id="admin-email"
                   type="email"
-                  defaultValue="admin@hotel.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="grid gap-1.5">
@@ -46,12 +77,17 @@ export default function AdminLoginPage() {
                 <Input
                   id="admin-password"
                   type="password"
-                  defaultValue="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              <Button type="submit" className="w-full">
+              {error ? (
+                <p className="text-sm text-destructive">{error}</p>
+              ) : null}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
                 <LogIn />
-                Đăng nhập
+                {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
               </Button>
             </form>
           </CardContent>

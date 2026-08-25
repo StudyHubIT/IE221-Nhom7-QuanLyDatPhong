@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
+import {
+  AdminSessionProvider,
+  UserSessionProvider,
+} from "@/components/auth/session-provider";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
@@ -23,7 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={cn("font-sans", inter.variable)}>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <UserSessionProvider>
+          <AdminSessionProvider>{children}</AdminSessionProvider>
+        </UserSessionProvider>
+      </body>
     </html>
   );
 }

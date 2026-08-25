@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Building2, ChevronDown } from "lucide-react";
 
+import { useUserSession } from "@/components/auth/session-provider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,19 +22,15 @@ const navItems = [
   { href: "/account/bookings", label: "Đặt phòng của tôi" },
 ];
 
-type SiteHeaderProps = {
-  variant?: "guest" | "user";
-};
-
-export function SiteHeader({ variant }: SiteHeaderProps) {
+export function SiteHeader() {
   const pathname = usePathname();
-  const resolvedVariant =
-    variant ??
-    (pathname.startsWith("/account") ||
-    pathname.startsWith("/cart") ||
-    pathname.startsWith("/checkout")
-      ? "user"
-      : "guest");
+  const router = useRouter();
+  const { session, logout } = useUserSession();
+
+  function onLogout() {
+    logout();
+    router.push("/");
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -66,15 +63,11 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
           })}
         </nav>
 
-        {resolvedVariant === "guest" ? (
-          <Button asChild size="sm">
-            <Link href="/login">Đăng nhập</Link>
-          </Button>
-        ) : (
+        {session ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5">
-                Nguyễn Văn A
+                {session.user.full_name ?? session.user.email}
                 <ChevronDown className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -87,11 +80,13 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
               <DropdownMenuItem asChild>
                 <Link href="/cart">Giỏ đặt phòng</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/">Đăng xuất</Link>
-              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onLogout}>Đăng xuất</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        ) : (
+          <Button asChild size="sm">
+            <Link href="/login">Đăng nhập</Link>
+          </Button>
         )}
       </div>
     </header>
