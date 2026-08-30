@@ -67,7 +67,9 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <UserAuthContext.Provider value={{ session, isHydrated, login, logout }}>
+    <UserAuthContext.Provider
+      value={{ session: isHydrated ? session : null, isHydrated, login, logout }}
+    >
       {children}
     </UserAuthContext.Provider>
   );
@@ -106,7 +108,9 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AdminAuthContext.Provider value={{ session, isHydrated, login, logout }}>
+    <AdminAuthContext.Provider
+      value={{ session: isHydrated ? session : null, isHydrated, login, logout }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );
