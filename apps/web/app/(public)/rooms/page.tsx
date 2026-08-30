@@ -3,8 +3,13 @@ import { Calendar, Hash, Layers, type LucideIcon } from "lucide-react";
 import { RoomResultCard } from "@/components/booking/room-result-card";
 import { RoomSearchForm } from "@/components/booking/room-search-form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { defaultStay, rooms, roomTypes } from "@/lib/mock-data";
+import { apiFetch } from "@/lib/api";
 import { formatDate } from "@/lib/format";
+import {
+  defaultStay,
+  type AvailabilityItem,
+  type RoomType,
+} from "@/lib/room-api-types";
 
 type RoomsPageProps = {
   searchParams: Promise<{
@@ -21,14 +26,30 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
   const checkOut = query.checkOut ?? defaultStay.checkOut;
   const type = query.type ?? "all";
   const count = query.count ?? String(defaultStay.count);
-  const selectedType = roomTypes.find((roomType) => String(roomType.id) === type);
+  const availabilityParams = new URLSearchParams({
+    check_in: checkIn,
+    check_out: checkOut,
+    count,
+  });
+  if (type !== "all") availabilityParams.set("loai_phong_id", type);
 
-  const results = rooms
-    .filter((room) => type === "all" || String(room.loai_phong_id) === type)
-    .map((room) => ({
-      room,
-      roomType: roomTypes.find((item) => item.id === room.loai_phong_id)!,
-    }));
+  let roomTypes: RoomType[] = [];
+  let results: AvailabilityItem[] = [];
+  let error = false;
+
+  try {
+    [roomTypes, results] = await Promise.all([
+      apiFetch<RoomType[]>("/api/v1/room-types", { cache: "no-store" }),
+      apiFetch<AvailabilityItem[]>(
+        `/api/v1/rooms/availability?${availabilityParams.toString()}`,
+        { cache: "no-store" },
+      ),
+    ]);
+  } catch {
+    error = true;
+  }
+
+  const selectedType = roomTypes.find((roomType) => String(roomType.id) === type);
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 px-6 py-8">
@@ -48,6 +69,7 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
         defaultCheckOut={checkOut}
         defaultType={type}
         defaultCount={count}
+        roomTypes={roomTypes}
       />
 
       <section className="grid gap-6 lg:grid-cols-[240px_1fr]">
@@ -85,11 +107,19 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
             </p>
           </div>
           <div className="space-y-3">
-            {results.map(({ room, roomType }) => (
+            {error ? (
+              <p className="text-muted-foreground">
+                Không thể tải phòng trống. Vui lòng thử lại sau.
+              </p>
+            ) : results.length === 0 ? (
+              <p className="text-muted-foreground">
+                Không có phòng trống phù hợp. Vui lòng thử ngày hoặc loại phòng khác.
+              </p>
+            ) : results.map((room) => (
               <RoomResultCard
                 key={room.id}
                 room={room}
-                roomType={roomType}
+                detailHref={`/rooms/${room.loai_phong_id}?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`}
               />
             ))}
           </div>
