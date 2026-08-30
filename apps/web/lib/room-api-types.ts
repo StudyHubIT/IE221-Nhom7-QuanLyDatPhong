@@ -12,6 +12,15 @@ export type Room = {
   so_phong: string;
   loai_phong_id: number;
   trang_thai: "AVAILABLE" | "OCCUPIED" | "MAINTENANCE";
+  ten_loai?: string | null;
+  gia_co_ban?: number | null;
+};
+
+export type Paginated<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
 };
 
 export type AvailabilityItem = Room & {

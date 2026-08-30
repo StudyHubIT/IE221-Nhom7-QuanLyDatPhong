@@ -21,6 +21,9 @@ type ConfirmDeleteDialogProps = {
   confirmLabel?: string;
   blocked?: boolean;
   trigger?: ReactNode;
+  onConfirm?: () => Promise<void> | void;
+  isSubmitting?: boolean;
+  error?: string | null;
 };
 
 export function ConfirmDeleteDialog({
@@ -30,6 +33,9 @@ export function ConfirmDeleteDialog({
   confirmLabel = "Xóa",
   blocked = false,
   trigger,
+  onConfirm,
+  isSubmitting = false,
+  error,
 }: ConfirmDeleteDialogProps) {
   const [open, setOpen] = useState(false);
 
@@ -48,13 +54,14 @@ export function ConfirmDeleteDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" disabled={isSubmitting} onClick={() => setOpen(false)}>
             {blocked ? "Đóng" : "Hủy"}
           </Button>
           {blocked ? null : (
-            <Button variant="destructive" onClick={() => setOpen(false)}>
-              {confirmLabel}
+            <Button variant="destructive" disabled={isSubmitting} onClick={onConfirm}>
+              {isSubmitting ? "Đang xử lý..." : confirmLabel}
             </Button>
           )}
         </DialogFooter>
