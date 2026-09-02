@@ -60,7 +60,7 @@ export default async function MyBookingDetailPage({
           </p>
         </div>
         {booking.trang_thai === "CONFIRMED" || booking.trang_thai === "PENDING" ? (
-          <CancelBookingDialog />
+          <CancelBookingDialog bookingId={booking.numericId} />
         ) : null}
       </div>
 
