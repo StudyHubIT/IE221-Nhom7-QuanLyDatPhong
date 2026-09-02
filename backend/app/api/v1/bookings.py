@@ -52,7 +52,7 @@ def cancel_my_booking(
     user: CurrentUser,
     db: Annotated[Session, Depends(get_db)],
 ) -> Refund:
-    """Khách hủy đơn của mình, tạo một yêu cầu hoàn tiền REQUESTED."""
+    """Khách hủy đơn, tạo một yêu cầu hoàn tiền REQUESTED."""
     booking = (
         db.query(BookingModel)
         .filter(BookingModel.id == id, BookingModel.user_id == user.id)
@@ -64,7 +64,7 @@ def cancel_my_booking(
             detail="Không tìm thấy đơn đặt phòng",
         )
 
-    # Chỉ đơn chưa nhận phòng mới được hủy.
+    # Chưa nhận phòng mới được hủy.
     if booking.trang_thai not in ("PENDING", "CONFIRMED"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -87,7 +87,7 @@ def cancel_my_booking(
                     detail="Đơn này đã có yêu cầu hoàn tiền",
                 )
 
-    # Mỗi đơn chỉ có một lần thanh toán nên lấy dòng đầu tiên.
+    # Mỗi đơn chỉ có một lần thanh toán.
     payment = booking.payments[0]
 
     refund = RefundModel(

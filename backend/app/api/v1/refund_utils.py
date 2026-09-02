@@ -1,15 +1,8 @@
-"""Hàm dùng chung cho nhóm endpoint hoàn tiền (Task D)."""
-
 from app.models.hotel import Refund as RefundModel
 from app.schemas.hotel import Refund, RefundStatus
 
 
 def build_refund_response(refund: RefundModel) -> Refund:
-    """Đổi một dòng REFUNDS trong database thành JSON trả về cho client.
-
-    Bảng REFUNDS chỉ lưu payment_id, nên mã hoàn tiền, mã đơn và tên khách
-    phải lấy thêm qua chuỗi quan hệ: REFUNDS -> PAYMENTS -> DATPHONG -> USERS.
-    """
     payment = refund.payment
     booking = payment.booking
 
