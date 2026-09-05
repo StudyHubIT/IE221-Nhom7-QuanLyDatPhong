@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useUserSession } from "@/components/auth/session-provider";
@@ -17,6 +17,14 @@ import { apiFetch, ApiError } from "@/lib/api";
 import type { UserProfile } from "@/lib/session";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useUserSession();

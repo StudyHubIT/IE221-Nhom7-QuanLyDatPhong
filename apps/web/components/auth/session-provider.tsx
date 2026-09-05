@@ -3,8 +3,8 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -36,15 +36,17 @@ type AdminAuthContextValue = {
 
 const UserAuthContext = createContext<UserAuthContextValue | null>(null);
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
+const subscribeToHydration = () => () => {};
+const getHydratedSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
 
 export function UserSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<UserSession | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setSession(readUserSession());
-    setIsHydrated(true);
-  }, []);
+  const [session, setSession] = useState<UserSession | null>(readUserSession);
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerHydrationSnapshot,
+  );
 
   function login(next: UserSession) {
     writeUserSession(next);
@@ -65,7 +67,9 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <UserAuthContext.Provider value={{ session, isHydrated, login, logout }}>
+    <UserAuthContext.Provider
+      value={{ session: isHydrated ? session : null, isHydrated, login, logout }}
+    >
       {children}
     </UserAuthContext.Provider>
   );
@@ -80,13 +84,12 @@ export function useUserSession() {
 }
 
 export function AdminSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AdminSession | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setSession(readAdminSession());
-    setIsHydrated(true);
-  }, []);
+  const [session, setSession] = useState<AdminSession | null>(readAdminSession);
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getHydratedSnapshot,
+    getServerHydrationSnapshot,
+  );
 
   function login(next: AdminSession) {
     writeAdminSession(next);
@@ -105,7 +108,9 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AdminAuthContext.Provider value={{ session, isHydrated, login, logout }}>
+    <AdminAuthContext.Provider
+      value={{ session: isHydrated ? session : null, isHydrated, login, logout }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );
