@@ -13,11 +13,13 @@ at the repo root. This skill converts one page from mock data to a real
 
 ## 1. Confirm the endpoint before touching any code
 
-Read `phan_cong_cong_viec.md` at the repo root. Find the page in the
-frontend checklist of one of the four tasks, and read the matching backend
-endpoint from the "Ma trận endpoint ↔ Task" table at the top of that file
-(method + path). Do not guess or invent an endpoint — if the page isn't
-listed there, or the endpoint it needs isn't implemented yet server-side
+Read `phan_cong_cong_viec.md` at the repo root for the endpoint matrix,
+then the matching per-person file (`phan_cong_tinh.md` / `phan_cong_hoang.md`
+/ `phan_cong_vu.md` / `phan_cong_hiep.md`). Find the page in that file's
+frontend checklist, and read the matching backend endpoint from the
+"Ma trận endpoint ↔ Task" table (method + path). Do not guess or invent
+an endpoint — if the page isn't listed there, or the endpoint it needs
+isn't implemented yet server-side
 (check `backend/app/api/v1/*.py` — if the handler still imports from
 `app.api.v1.stubs`, it's not ready), say so instead of wiring against a
 stub that will change shape later.

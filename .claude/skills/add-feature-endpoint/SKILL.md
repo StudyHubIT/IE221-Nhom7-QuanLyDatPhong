@@ -17,8 +17,10 @@ Read [`documents/openapi.yaml`](../../../documents/openapi.yaml) for the
 exact path, method, request/response schema, and status codes for this
 endpoint — the request/response shape is already decided, don't improvise
 fields. Cross-check [`phan_cong_cong_viec.md`](../../../phan_cong_cong_viec.md)
-at the repo root to confirm which task/table this endpoint belongs to, and
-read that task's "KHÔNG thuộc phạm vi" notes so you don't accidentally
+for the endpoint matrix, then the matching per-person file
+(`phan_cong_tinh.md` / `phan_cong_hoang.md` / `phan_cong_vu.md` /
+`phan_cong_hiep.md`) to confirm which task/table this endpoint belongs to,
+and read that file's "KHÔNG thuộc phạm vi" notes so you don't accidentally
 implement logic that belongs to a different feature cluster (the clearest
 example: `POST /api/v1/bookings/{id}/cancel` lives in `bookings.py` but is
 owned by the refund task, not the booking task).
