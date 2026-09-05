@@ -2,17 +2,22 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentAdmin
 from app.api.v1.refund_utils import build_refund_response
-from app.api.v1.stubs import stub_admin, stub_booking, stub_room, stub_room_type
+from app.api.v1.stubs import stub_admin, stub_booking
 from app.core.db import get_db
 from app.core.security import create_access_token, verify_password
 from app.models.hotel import Admin as AdminModel
 from app.models.hotel import Booking as BookingModel
+from app.models.hotel import BookingItem as BookingItemModel
 from app.models.hotel import Payment as PaymentModel
 from app.models.hotel import Refund as RefundModel
+from app.models.hotel import Room as RoomModel
+from app.models.hotel import RoomType as RoomTypeModel
 from app.models.hotel import User as UserModel
 from app.schemas.hotel import (
     AdminAccount,
@@ -29,6 +34,7 @@ from app.schemas.hotel import (
     RefundStatus,
     Role,
     Room,
+    RoomStatus,
     RoomType,
     RoomTypeWrite,
     RoomWrite,
@@ -57,6 +63,58 @@ staff_router = APIRouter(prefix="/api/v1/admin", tags=["AdminStaff"])
 
 def _empty_page(page: int, page_size: int):
     return Paginated(page=page, page_size=page_size)
+
+
+def _room_type_response(db: Session, room_type: RoomTypeModel) -> RoomType:
+    room_count = db.scalar(
+        select(func.count(RoomModel.id)).where(RoomModel.loai_phong_id == room_type.id)
+    )
+    return RoomType.model_validate(room_type).model_copy(
+        update={"room_count": room_count}
+    )
+
+
+def _room_response(room: RoomModel, room_type: RoomTypeModel) -> Room:
+    return Room.model_validate(room).model_copy(
+        update={
+            "ten_loai": room_type.ten_loai,
+            "gia_co_ban": float(room_type.gia_co_ban),
+        }
+    )
+
+
+def _room_with_type(db: Session, room_id: int) -> tuple[RoomModel, RoomTypeModel] | None:
+    return db.execute(
+        select(RoomModel, RoomTypeModel)
+        .join(RoomTypeModel, RoomModel.loai_phong_id == RoomTypeModel.id)
+        .where(RoomModel.id == room_id)
+    ).one_or_none()
+
+
+def _has_unfinished_booking(db: Session, room_id: int) -> bool:
+    return db.scalar(
+        select(BookingItemModel.id)
+        .join(BookingModel, BookingItemModel.datphong_id == BookingModel.id)
+        .where(
+            BookingItemModel.phong_id == room_id,
+            BookingModel.trang_thai.notin_(("CANCELLED", "CHECKED_OUT")),
+        )
+        .limit(1)
+    ) is not None
+
+
+def _require_room_type(db: Session, room_type_id: int) -> RoomTypeModel:
+    room_type = db.get(RoomTypeModel, room_type_id)
+    if room_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room type not found")
+    return room_type
+
+
+def _duplicate_room_number(db: Session, so_phong: str, room_id: int | None = None) -> bool:
+    statement = select(RoomModel.id).where(RoomModel.so_phong == so_phong)
+    if room_id is not None:
+        statement = statement.where(RoomModel.id != room_id)
+    return db.scalar(statement.limit(1)) is not None
 
 
 @auth_router.post("/login")
@@ -91,83 +149,245 @@ def get_dashboard(_admin: CurrentAdmin) -> Dashboard:
 @room_types_router.get("")
 def list_room_types(
     _admin: CurrentAdmin,
+    db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> Paginated[RoomType]:
-    return _empty_page(page, page_size)
+    filters = []
+    if q and q.strip():
+        filters.append(RoomTypeModel.ten_loai.ilike(f"%{q.strip()}%"))
+
+    room_count = func.count(RoomModel.id).label("room_count")
+    statement = (
+        select(RoomTypeModel, room_count)
+        .outerjoin(RoomModel, RoomModel.loai_phong_id == RoomTypeModel.id)
+        .where(*filters)
+        .group_by(RoomTypeModel.id)
+        .order_by(RoomTypeModel.id)
+    )
+    total = db.scalar(select(func.count()).select_from(RoomTypeModel).where(*filters))
+    rows = db.execute(statement.offset((page - 1) * page_size).limit(page_size)).all()
+
+    return Paginated(
+        items=[
+            RoomType.model_validate(room_type).model_copy(
+                update={"room_count": count}
+            )
+            for room_type, count in rows
+        ],
+        total=total or 0,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @room_types_router.post("", status_code=status.HTTP_201_CREATED)
-def create_room_type(body: RoomTypeWrite, _admin: CurrentAdmin) -> RoomType:
-    return RoomType(id=1, ten_loai=body.ten_loai, gia_co_ban=body.gia_co_ban)
+def create_room_type(
+    body: RoomTypeWrite,
+    _admin: CurrentAdmin,
+    db: Annotated[Session, Depends(get_db)],
+) -> RoomType:
+    room_type = RoomTypeModel(**body.model_dump())
+    db.add(room_type)
+    db.commit()
+    db.refresh(room_type)
+    return _room_type_response(db, room_type)
 
 
 @room_types_router.get("/{id}")
-def get_room_type(id: int, _admin: CurrentAdmin) -> RoomType:
-    return stub_room_type(id)
+def get_room_type(
+    id: int, _admin: CurrentAdmin, db: Annotated[Session, Depends(get_db)]
+) -> RoomType:
+    room_type = db.get(RoomTypeModel, id)
+    if room_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room type not found")
+    return _room_type_response(db, room_type)
 
 
 @room_types_router.put("/{id}")
 def update_room_type(
-    id: int, body: RoomTypeWrite, _admin: CurrentAdmin
+    id: int,
+    body: RoomTypeWrite,
+    _admin: CurrentAdmin,
+    db: Annotated[Session, Depends(get_db)],
 ) -> RoomType:
-    return RoomType(id=id, ten_loai=body.ten_loai, gia_co_ban=body.gia_co_ban)
+    room_type = db.get(RoomTypeModel, id)
+    if room_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room type not found")
+
+    room_type.ten_loai = body.ten_loai
+    room_type.gia_co_ban = body.gia_co_ban
+    db.commit()
+    db.refresh(room_type)
+    return _room_type_response(db, room_type)
 
 
 @room_types_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_room_type(id: int, _admin: CurrentAdmin) -> None:
-    return None
+def delete_room_type(
+    id: int, _admin: CurrentAdmin, db: Annotated[Session, Depends(get_db)]
+) -> None:
+    room_type = db.get(RoomTypeModel, id)
+    if room_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room type not found")
+
+    has_rooms = db.scalar(
+        select(RoomModel.id).where(RoomModel.loai_phong_id == id).limit(1)
+    )
+    if has_rooms is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete room type while rooms reference it",
+        )
+
+    db.delete(room_type)
+    db.commit()
 
 
 @rooms_router.get("")
 def list_rooms(
     _admin: CurrentAdmin,
+    db: Annotated[Session, Depends(get_db)],
     loai_phong_id: int | None = None,
-    trang_thai: str | None = None,
+    trang_thai: RoomStatus | None = None,
     q: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> Paginated[Room]:
-    return _empty_page(page, page_size)
+    filters = []
+    if loai_phong_id is not None:
+        filters.append(RoomModel.loai_phong_id == loai_phong_id)
+    if trang_thai is not None:
+        filters.append(RoomModel.trang_thai == trang_thai.value)
+    if q and q.strip():
+        filters.append(RoomModel.so_phong.ilike(f"%{q.strip()}%"))
+
+    statement = (
+        select(RoomModel, RoomTypeModel)
+        .join(RoomTypeModel, RoomModel.loai_phong_id == RoomTypeModel.id)
+        .where(*filters)
+        .order_by(RoomModel.id)
+    )
+    total = db.scalar(select(func.count()).select_from(RoomModel).where(*filters))
+    rows = db.execute(statement.offset((page - 1) * page_size).limit(page_size)).all()
+    return Paginated(
+        items=[_room_response(room, room_type) for room, room_type in rows],
+        total=total or 0,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @rooms_router.post("", status_code=status.HTTP_201_CREATED)
-def create_room(body: RoomWrite, _admin: CurrentAdmin) -> Room:
-    return Room(
-        id=1,
-        so_phong=body.so_phong,
-        loai_phong_id=body.loai_phong_id,
-        trang_thai=body.trang_thai,
-    )
+def create_room(
+    body: RoomWrite,
+    _admin: CurrentAdmin,
+    db: Annotated[Session, Depends(get_db)],
+) -> Room:
+    room_type = _require_room_type(db, body.loai_phong_id)
+    if _duplicate_room_number(db, body.so_phong):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Room number already exists")
+
+    room = RoomModel(**body.model_dump())
+    db.add(room)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Room number already exists")
+    db.refresh(room)
+    return _room_response(room, room_type)
 
 
 @rooms_router.get("/{id}")
-def get_room(id: int, _admin: CurrentAdmin) -> Room:
-    return stub_room(id)
+def get_room(
+    id: int, _admin: CurrentAdmin, db: Annotated[Session, Depends(get_db)]
+) -> Room:
+    result = _room_with_type(db, id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    return _room_response(*result)
 
 
 @rooms_router.put("/{id}")
-def update_room(id: int, body: RoomWrite, _admin: CurrentAdmin) -> Room:
-    return Room(
-        id=id,
-        so_phong=body.so_phong,
-        loai_phong_id=body.loai_phong_id,
-        trang_thai=body.trang_thai,
-    )
+def update_room(
+    id: int,
+    body: RoomWrite,
+    _admin: CurrentAdmin,
+    db: Annotated[Session, Depends(get_db)],
+) -> Room:
+    room = db.get(RoomModel, id)
+    if room is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    room_type = _require_room_type(db, body.loai_phong_id)
+    if _duplicate_room_number(db, body.so_phong, room_id=id):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Room number already exists")
+
+    room.so_phong = body.so_phong
+    room.loai_phong_id = body.loai_phong_id
+    room.trang_thai = body.trang_thai.value
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Room number already exists")
+    db.refresh(room)
+    return _room_response(room, room_type)
 
 
 @rooms_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_room(id: int, _admin: CurrentAdmin) -> None:
-    return None
+def delete_room(
+    id: int, _admin: CurrentAdmin, db: Annotated[Session, Depends(get_db)]
+) -> None:
+    room = db.get(RoomModel, id)
+    if room is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    if _has_unfinished_booking(db, id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete room with an unfinished booking",
+        )
+
+    db.delete(room)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete room with booking history",
+        )
 
 
 @rooms_router.patch("/{id}/status")
 def patch_room_status(
-    id: int, body: StatusPatch, _admin: CurrentAdmin
+    id: int,
+    body: StatusPatch,
+    _admin: CurrentAdmin,
+    db: Annotated[Session, Depends(get_db)],
 ) -> Room:
-    room = stub_room(id)
-    return room.model_copy(update={"trang_thai": body.status})
+    try:
+        room_status = RoomStatus(body.status)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid room status",
+        )
+
+    result = _room_with_type(db, id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    room, room_type = result
+    if _has_unfinished_booking(db, id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot change room status with an unfinished booking",
+        )
+
+    room.trang_thai = room_status.value
+    db.commit()
+    db.refresh(room)
+    return _room_response(room, room_type)
 
 
 @bookings_router.get("")

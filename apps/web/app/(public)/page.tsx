@@ -1,9 +1,21 @@
 import { RoomSearchForm } from "@/components/booking/room-search-form";
 import { RoomTypeCard } from "@/components/booking/room-type-card";
 import { Card, CardContent } from "@/components/ui/card";
-import { roomTypes } from "@/lib/mock-data";
+import { apiFetch } from "@/lib/api";
+import type { RoomType } from "@/lib/room-api-types";
 
-export default function HomePage() {
+export default async function HomePage() {
+  let roomTypes: RoomType[] = [];
+  let error = false;
+
+  try {
+    roomTypes = await apiFetch<RoomType[]>("/api/v1/room-types", {
+      cache: "no-store",
+    });
+  } catch {
+    error = true;
+  }
+
   return (
     <main>
       <section className="border-b bg-muted/40">
@@ -18,7 +30,7 @@ export default function HomePage() {
           </div>
           <Card>
             <CardContent>
-              <RoomSearchForm />
+              <RoomSearchForm roomTypes={roomTypes} />
             </CardContent>
           </Card>
         </div>
@@ -31,11 +43,19 @@ export default function HomePage() {
             Chọn loại phòng phù hợp với nhu cầu của bạn
           </p>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {roomTypes.map((roomType) => (
-            <RoomTypeCard key={roomType.id} roomType={roomType} />
-          ))}
-        </div>
+        {error ? (
+          <p className="text-muted-foreground">
+            Không thể tải danh sách loại phòng. Vui lòng thử lại sau.
+          </p>
+        ) : roomTypes.length === 0 ? (
+          <p className="text-muted-foreground">Hiện chưa có loại phòng nào.</p>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-3">
+            {roomTypes.map((roomType) => (
+              <RoomTypeCard key={roomType.id} roomType={roomType} />
+            ))}
+          </div>
+        )}
       </section>
 
       <footer className="border-t">

@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { defaultStay, roomTypes } from "@/lib/mock-data";
+import { defaultStay, type RoomType } from "@/lib/room-api-types";
 import { cn } from "@/lib/utils";
 
 type RoomSearchFormProps = {
@@ -23,6 +23,7 @@ type RoomSearchFormProps = {
   defaultType?: string;
   defaultCount?: string;
   className?: string;
+  roomTypes: RoomType[];
 };
 
 export function RoomSearchForm({
@@ -32,6 +33,7 @@ export function RoomSearchForm({
   defaultType = "all",
   defaultCount = String(defaultStay.count),
   className,
+  roomTypes,
 }: RoomSearchFormProps) {
   const router = useRouter();
   const [checkIn, setCheckIn] = useState(defaultCheckIn);

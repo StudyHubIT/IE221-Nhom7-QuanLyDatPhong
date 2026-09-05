@@ -10,19 +10,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatVnd } from "@/lib/format";
-import type { RoomType } from "@/lib/mock-data";
+import type { RoomType } from "@/lib/room-api-types";
 
 export function RoomTypeCard({ roomType }: { roomType: RoomType }) {
   return (
     <Card className="overflow-hidden pt-0">
       <div className="relative h-44 w-full">
-        <Image
-          src={roomType.image}
-          alt={roomType.ten_loai}
-          fill
-          className="object-cover"
-          sizes="(min-width: 1024px) 360px, 100vw"
-        />
+        {roomType.image ? (
+          <Image
+            src={roomType.image}
+            alt={roomType.ten_loai}
+            fill
+            className="object-cover"
+            sizes="(min-width: 1024px) 360px, 100vw"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-muted text-sm text-muted-foreground">
+            Chưa có ảnh phòng
+          </div>
+        )}
       </div>
       <CardHeader>
         <CardTitle>{roomType.ten_loai}</CardTitle>
