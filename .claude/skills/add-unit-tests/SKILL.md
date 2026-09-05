@@ -43,7 +43,9 @@ different testing style:
     another test's side effects.
 - **What to actually cover** — for each endpoint touched, base the test
   list on the concrete cases already called out for that endpoint's task
-  in [`phan_cong_cong_viec.md`](../../../phan_cong_cong_viec.md)'s
+  in the matching per-person file (`phan_cong_tinh.md` / `phan_cong_hoang.md`
+  / `phan_cong_vu.md` / `phan_cong_hiep.md`; index:
+  [`phan_cong_cong_viec.md`](../../../phan_cong_cong_viec.md))'s
   Definition of Done and backend checklist notes (e.g. "hủy lại lần 2
   cùng đơn → nhận 400", "thử nhảy ngược trạng thái → nhận 400", "2 request
   checkout cùng lúc cho cùng 1 phòng → 1 thành công, 1 nhận 409") — these

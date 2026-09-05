@@ -7,17 +7,20 @@ description: Read-only audit of how much of one team member's task (A/B/C/D — 
 
 This is a **read-only** audit — it never edits code. It exists because the
 four tasks in [`phan_cong_cong_viec.md`](../../../phan_cong_cong_viec.md)
-deliberately share files in a couple of places (`bookings.py` is split
-between the booking task and the refund task), so it's easy for someone
-to accidentally implement more or less than their slice, or for a reviewer
-to miss that an endpoint still returns stub data.
+(index) and the per-person files (`phan_cong_tinh.md` / `phan_cong_hoang.md`
+/ `phan_cong_vu.md` / `phan_cong_hiep.md`) deliberately share files in a
+couple of places (`bookings.py` is split between the booking task and the
+refund task), so it's easy for someone to accidentally implement more or
+less than their slice, or for a reviewer to miss that an endpoint still
+returns stub data.
 
 ## 1. Resolve the task
 
-Read `phan_cong_cong_viec.md`. If given a name instead of a letter, map it
-via the "Vai trò" table: Tịnh→A, Hoàng→B, Vũ→C, Hiệp→D. Read that task's
-full section: its endpoint checklist, frontend checklist, "KHÔNG thuộc
-Task X" list, and Definition of Done.
+Map the name/letter via the "Vai trò" table in `phan_cong_cong_viec.md`:
+Tịnh→A → `phan_cong_tinh.md`, Hoàng→B → `phan_cong_hoang.md`, Vũ→C →
+`phan_cong_vu.md`, Hiệp→D → `phan_cong_hiep.md`. Read that person's file:
+its endpoint checklist, frontend checklist, "KHÔNG thuộc Task X" list,
+and Definition of Done.
 
 ## 2. Check each backend endpoint in the checklist
 

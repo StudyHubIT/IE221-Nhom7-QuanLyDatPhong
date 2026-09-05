@@ -19,9 +19,11 @@ Tham khảo bắt buộc trước khi code: [`screens.md`](./screens.md) (mô t�
 | Vũ | Task C — Đặt phòng & Thanh toán |
 | Hiệp | Task D — Hủy đặt phòng & Hoàn tiền |
 
-> Chi tiết từng task (bảng liên quan, hàm cần viết, file frontend) nằm ở
-> [`phan_cong_cong_viec.md`](../phan_cong_cong_viec.md) ở root — file này chỉ giữ lại Task 0 (đã
-> xong) để tham khảo lịch sử, tránh trùng lặp nội dung dễ lệch nhau khi cập nhật.
+> Chi tiết từng task nằm ở file riêng từng người — Tịnh [`phan_cong_tinh.md`](../phan_cong_tinh.md),
+> Hoàng [`phan_cong_hoang.md`](../phan_cong_hoang.md), Vũ [`phan_cong_vu.md`](../phan_cong_vu.md),
+> Hiệp [`phan_cong_hiep.md`](../phan_cong_hiep.md). Ma trận endpoint + quy trình nhóm:
+> [`phan_cong_cong_viec.md`](../phan_cong_cong_viec.md). File này chỉ giữ lại Task 0 (đã xong)
+> để tham khảo lịch sử, tránh trùng lặp nội dung dễ lệch nhau khi cập nhật.
 
 ## Task 0 — Nền tảng DB & Auth (✅ đã xong, đã merge)
 
