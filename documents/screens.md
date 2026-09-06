@@ -107,7 +107,7 @@ Schema hiện tại (`documents/sql/postgres/init_tables.sql`) chỉ khai báo g
 
 - Mục đích: hiển thị các phòng còn trống trong khoảng ngày đã chọn, theo từng loại phòng.
 - Dữ liệu hiển thị: `PHONG.so_phong`, `LOAIPHONG.ten_loai`, `LOAIPHONG.gia_co_ban`, số lượng phòng trống theo loại.
-- Logic lọc: một `PHONG` được coi là còn trống nếu không có `CT_DATPHONG` nào nối với `DATPHONG` có khoảng `check_in`–`check_out` giao với khoảng ngày khách chọn và `DATPHONG.trang_thai` chưa `CANCELLED`.
+- Logic lọc: một `PHONG` được coi là còn trống nếu `PHONG.trang_thai` không phải `MAINTENANCE` và không có `CT_DATPHONG` nào nối với `DATPHONG` có khoảng `check_in`–`check_out` giao với khoảng ngày khách chọn và `DATPHONG.trang_thai` chưa `CANCELLED`.
 - Số lượng phòng yêu cầu là mức tối thiểu sau các bộ lọc: nếu không đủ thì P2 hiển thị trạng thái rỗng, còn nếu đủ thì hiển thị tất cả phòng khớp (không cắt còn đúng số lượng yêu cầu).
 - Hành động chính: chọn một hoặc nhiều phòng → thêm vào giỏ (P4); xem chi tiết loại phòng (P3).
 - Điều kiện hiển thị: nếu không có phòng trống, hiển thị trạng thái rỗng gợi ý đổi ngày/loại phòng.
