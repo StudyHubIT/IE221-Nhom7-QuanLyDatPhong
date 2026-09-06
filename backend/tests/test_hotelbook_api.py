@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from app.core.db import SessionLocal
 from app.main import app
@@ -251,6 +251,17 @@ def _create_booking_for_room(*, room_id, status, check_in, check_out):
         db.flush()
         db.add(BookingItem(datphong_id=booking.id, phong_id=room_id, don_gia=100_000))
         db.commit()
+        return booking.id
+
+
+def _delete_availability_test_data(*, room_type_ids, room_ids, booking_ids=()):
+    with SessionLocal() as db:
+        if booking_ids:
+            db.execute(delete(BookingItem).where(BookingItem.datphong_id.in_(booking_ids)))
+            db.execute(delete(Booking).where(Booking.id.in_(booking_ids)))
+        db.execute(delete(Room).where(Room.id.in_(room_ids)))
+        db.execute(delete(RoomType).where(RoomType.id.in_(room_type_ids)))
+        db.commit()
 
 
 def test_search_availability_returns_real_available_room_fields_and_excludes_maintenance():
@@ -397,7 +408,7 @@ def test_search_availability_rejects_count_below_one():
     assert response.status_code == 422
 
 
-def test_search_availability_accepts_count_without_limiting_results():
+def test_search_availability_count_returns_all_matching_rooms_when_minimum_is_met():
     token = uuid.uuid4().hex[:10]
     room_type_id, first_room_id = _create_availability_room(
         token=f"{token}A", price=567_890
@@ -405,19 +416,97 @@ def test_search_availability_accepts_count_without_limiting_results():
     _, second_room_id = _create_availability_room(
         token=f"{token}B", price=567_890, room_type_id=room_type_id
     )
-
-    response = client.get(
-        "/api/v1/rooms/availability",
-        params={
-            "check_in": "2034-01-10",
-            "check_out": "2034-01-12",
-            "loai_phong_id": room_type_id,
-            "count": 1,
-        },
+    _, third_room_id = _create_availability_room(
+        token=f"{token}C", price=567_890, room_type_id=room_type_id
     )
 
-    assert response.status_code == 200
-    assert {first_room_id, second_room_id} <= {item["id"] for item in response.json()}
+    try:
+        response = client.get(
+            "/api/v1/rooms/availability",
+            params={
+                "check_in": "2034-01-10",
+                "check_out": "2034-01-12",
+                "loai_phong_id": room_type_id,
+                "count": 2,
+            },
+        )
+
+        assert response.status_code == 200
+        assert {item["id"] for item in response.json()} == {
+            first_room_id,
+            second_room_id,
+            third_room_id,
+        }
+    finally:
+        _delete_availability_test_data(
+            room_type_ids=[room_type_id],
+            room_ids=[first_room_id, second_room_id, third_room_id],
+        )
+
+
+def test_search_availability_count_returns_empty_when_minimum_is_not_met():
+    token = uuid.uuid4().hex[:10]
+    room_type_id, room_id = _create_availability_room(token=token, price=567_890)
+
+    try:
+        response = client.get(
+            "/api/v1/rooms/availability",
+            params={
+                "check_in": "2034-02-10",
+                "check_out": "2034-02-12",
+                "loai_phong_id": room_type_id,
+                "count": 2,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == []
+    finally:
+        _delete_availability_test_data(room_type_ids=[room_type_id], room_ids=[room_id])
+
+
+def test_search_availability_count_is_evaluated_after_filters():
+    token = uuid.uuid4().hex[:10]
+    room_type_id, available_room_id = _create_availability_room(
+        token=f"{token}A", price=567_890
+    )
+    _, maintenance_room_id = _create_availability_room(
+        token=f"{token}M",
+        price=567_890,
+        status="MAINTENANCE",
+        room_type_id=room_type_id,
+    )
+    _, held_room_id = _create_availability_room(
+        token=f"{token}H", price=567_890, room_type_id=room_type_id
+    )
+    booking_id = _create_booking_for_room(
+        room_id=held_room_id,
+        status="CONFIRMED",
+        check_in=datetime(2034, 3, 10),
+        check_out=datetime(2034, 3, 12),
+    )
+
+    try:
+        response = client.get(
+            "/api/v1/rooms/availability",
+            params={
+                "check_in": "2034-03-10",
+                "check_out": "2034-03-12",
+                "loai_phong_id": room_type_id,
+                "min_price": 500_000,
+                "max_price": 600_000,
+                "count": 2,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == []
+    finally:
+        _delete_availability_test_data(
+            room_type_ids=[room_type_id],
+            room_ids=[available_room_id, maintenance_room_id, held_room_id],
+            booking_ids=[booking_id],
+        )
 
 
 def test_login_returns_access_token():

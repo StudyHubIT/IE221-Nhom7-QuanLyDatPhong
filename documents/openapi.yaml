@@ -743,7 +743,10 @@ paths:
           schema:
             type: integer
             minimum: 1
-          description: Số phòng khách muốn đặt (UI P1/P2)
+          description: |
+            Số phòng trống tối thiểu khách yêu cầu sau khi áp dụng toàn bộ bộ lọc.
+            Nếu còn ít hơn `count` phòng, endpoint trả mảng rỗng; nếu đủ, endpoint
+            trả tất cả phòng khớp, không giới hạn kết quả theo `count`.
         - in: query
           name: min_price
           schema:

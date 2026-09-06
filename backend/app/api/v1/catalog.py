@@ -112,6 +112,9 @@ def search_availability(
         statement = statement.where(RoomTypeModel.gia_co_ban <= max_price)
 
     rows = db.execute(statement.add_columns(RoomTypeModel)).all()
+    if count is not None and len(rows) < count:
+        return []
+
     return [
         AvailabilityItem.model_validate(room).model_copy(
             update={
