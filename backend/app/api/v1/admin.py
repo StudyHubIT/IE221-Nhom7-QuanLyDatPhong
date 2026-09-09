@@ -10,17 +10,19 @@ from app.api.deps import CurrentAdmin
 from app.api.v1.refund_utils import build_refund_response
 from app.api.v1.stubs import stub_admin, stub_booking
 from app.core.db import get_db
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, verify_password, hash_password
 from app.models.hotel import Admin as AdminModel
 from app.models.hotel import Booking as BookingModel
 from app.models.hotel import BookingItem as BookingItemModel
 from app.models.hotel import Payment as PaymentModel
 from app.models.hotel import Refund as RefundModel
+from app.models.hotel import Role as RoleModel
 from app.models.hotel import Room as RoomModel
 from app.models.hotel import RoomType as RoomTypeModel
 from app.models.hotel import User as UserModel
 from app.schemas.hotel import (
     AdminAccount,
+    AdminRole,
     AdminWrite,
     Booking,
     BookingStatus,
@@ -142,8 +144,74 @@ def admin_me(admin: CurrentAdmin) -> AdminAccount:
 
 
 @dashboard_router.get("/dashboard")
-def get_dashboard(_admin: CurrentAdmin) -> Dashboard:
-    return Dashboard()
+def get_dashboard(admin: CurrentAdmin, db: Annotated[Session, Depends(get_db)]) -> Dashboard:
+    from app.models.hotel import Booking, Payment, Room, Refund
+    from sqlalchemy import extract
+    from datetime import datetime
+    from app.schemas.hotel import Refund as RefundSchema, Booking as BookingSchema, BookingRoom
+    from app.api.v1.refund_utils import build_refund_response
+
+    now = datetime.now()
+
+    pending_count = db.scalar(select(func.count(Booking.id)).where(Booking.trang_thai == "PENDING")) or 0
+    confirmed_count = db.scalar(select(func.count(Booking.id)).where(Booking.trang_thai == "CONFIRMED")) or 0
+    
+    monthly_revenue = db.scalar(
+        select(func.sum(Payment.amount))
+        .where(
+            Payment.status == "PAID",
+            extract('year', Payment.created_at) == now.year,
+            extract('month', Payment.created_at) == now.month
+        )
+    ) or 0.0
+
+    rooms_available = db.scalar(select(func.count(Room.id)).where(Room.trang_thai == "AVAILABLE")) or 0
+    rooms_occupied = db.scalar(select(func.count(Room.id)).where(Room.trang_thai == "OCCUPIED")) or 0
+
+    pending_refunds_count = db.scalar(select(func.count(Refund.id)).where(Refund.status == "REQUESTED")) or 0
+
+    # Get latest 5 requested refunds
+    refunds_db = db.query(Refund).filter(Refund.status == "REQUESTED").order_by(Refund.created_at.desc()).limit(5).all()
+    pending_refunds = [build_refund_response(r) for r in refunds_db]
+
+    # Get latest 5 bookings
+    bookings_db = db.query(Booking).order_by(Booking.created_at.desc()).limit(5).all()
+    latest_bookings = []
+    for b in bookings_db:
+        # Build booking schema manually since we don't have a stub here
+        total = sum([item.don_gia for item in b.items])
+        rooms = [BookingRoom(
+            phong_id=item.phong_id, 
+            so_phong=item.room.so_phong, 
+            ten_loai=item.room.loai_phong.ten_loai,
+            don_gia=float(item.don_gia)
+        ) for item in b.items]
+        
+        latest_bookings.append(BookingSchema(
+            id=b.id,
+            code=f"BK-{b.id:04d}",
+            user_id=b.user_id,
+            user_name=b.user.full_name or b.user.email,
+            user_email=b.user.email,
+            user_phone=b.user.phone,
+            check_in=b.check_in.date(),
+            check_out=b.check_out.date(),
+            created_at=b.created_at,
+            trang_thai=b.trang_thai,
+            rooms=rooms,
+            total=float(total)
+        ))
+
+    return Dashboard(
+        pending_count=pending_count,
+        confirmed_count=confirmed_count,
+        monthly_revenue=float(monthly_revenue),
+        rooms_available=rooms_available,
+        rooms_occupied=rooms_occupied,
+        pending_refunds_count=pending_refunds_count,
+        pending_refunds=pending_refunds,
+        latest_bookings=latest_bookings
+    )
 
 
 @room_types_router.get("")
@@ -524,88 +592,176 @@ def reject_refund(
 @customers_router.get("")
 def list_customers(
     _admin: CurrentAdmin,
+    db: Annotated[Session, Depends(get_db)],
     status: str | None = None,
     q: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> Paginated[Customer]:
-    return _empty_page(page, page_size)
+    query = db.query(UserModel)
+    if status:
+        query = query.filter(UserModel.status == status)
+    if q:
+        search = f"%{q}%"
+        query = query.filter(
+            (UserModel.email.ilike(search)) |
+            (UserModel.full_name.ilike(search)) |
+            (UserModel.phone.ilike(search))
+        )
+    total = query.count()
+    users = query.offset((page - 1) * page_size).limit(page_size).all()
+    return Paginated(
+        items=[Customer.model_validate(u) for u in users],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @customers_router.patch("/{id}/status")
 def patch_customer_status(
-    id: int, body: StatusPatch, _admin: CurrentAdmin
+    id: int, body: StatusPatch, _admin: CurrentAdmin, db: Annotated[Session, Depends(get_db)]
 ) -> Customer:
-    return Customer(
-        id=id,
-        full_name="Nguyễn Văn A",
-        email="user1@gmail.com",
-        phone="0900000001",
-        status=body.status,
+    user = db.query(UserModel).filter(UserModel.id == id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khách hàng")
+    user.status = body.status
+    db.commit()
+    db.refresh(user)
+    return Customer.model_validate(user)
+
+
+def require_super_admin(admin: CurrentAdmin) -> AdminAccount:
+    if admin.role != "SUPER_ADMIN":
+        raise HTTPException(status_code=403, detail="Yêu cầu quyền Super Admin")
+    return admin
+
+
+SuperAdmin = Annotated[AdminAccount, Depends(require_super_admin)]
+
+
+def _map_admin(admin: AdminModel) -> AdminAccount:
+    role_code = AdminRole.STAFF
+    if admin.roles:
+        try:
+            role_code = AdminRole(admin.roles[0].code)
+        except ValueError:
+            role_code = AdminRole.STAFF
+    return AdminAccount(
+        id=admin.id,
+        full_name=admin.full_name,
+        email=admin.email,
+        role=role_code,
+        status=admin.status,
     )
 
 
 @staff_router.get("/admins")
 def list_admins(
-    _admin: CurrentAdmin,
+    _admin: SuperAdmin,
+    db: Annotated[Session, Depends(get_db)],
     q: str | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> Paginated[AdminAccount]:
-    return _empty_page(page, page_size)
+    query = db.query(AdminModel)
+    if q:
+        search = f"%{q}%"
+        query = query.filter(
+            (AdminModel.email.ilike(search)) |
+            (AdminModel.full_name.ilike(search))
+        )
+    total = query.count()
+    admins = query.offset((page - 1) * page_size).limit(page_size).all()
+    return Paginated(
+        items=[_map_admin(a) for a in admins],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @staff_router.post("/admins", status_code=status.HTTP_201_CREATED)
-def create_admin(body: AdminWrite, _admin: CurrentAdmin) -> AdminAccount:
-    return AdminAccount(
-        id=3,
-        full_name=body.full_name,
+def create_admin(body: AdminWrite, _admin: SuperAdmin, db: Annotated[Session, Depends(get_db)]) -> AdminAccount:
+    existing = db.query(AdminModel).filter(AdminModel.email == body.email).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Email đã tồn tại")
+    
+    role = db.query(RoleModel).filter(RoleModel.code == body.role).first()
+    if not role:
+        raise HTTPException(status_code=400, detail="Role không hợp lệ")
+
+    password = body.password or "password123"
+    
+    admin = AdminModel(
         email=body.email,
-        role=body.role,
+        full_name=body.full_name,
+        password_hash=hash_password(password),
     )
+    admin.roles.append(role)
+    db.add(admin)
+    db.commit()
+    db.refresh(admin)
+    return _map_admin(admin)
 
 
 @staff_router.get("/admins/{id}")
-def get_admin(id: int, _admin: CurrentAdmin) -> AdminAccount:
-    return stub_admin(id)
+def get_admin(id: int, _admin: SuperAdmin, db: Annotated[Session, Depends(get_db)]) -> AdminAccount:
+    admin = db.query(AdminModel).filter(AdminModel.id == id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên")
+    return _map_admin(admin)
 
 
 @staff_router.put("/admins/{id}")
-def update_admin(id: int, body: AdminWrite, _admin: CurrentAdmin) -> AdminAccount:
-    return AdminAccount(
-        id=id,
-        full_name=body.full_name,
-        email=body.email,
-        role=body.role,
-    )
+def update_admin(id: int, body: AdminWrite, _admin: SuperAdmin, db: Annotated[Session, Depends(get_db)]) -> AdminAccount:
+    admin = db.query(AdminModel).filter(AdminModel.id == id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên")
+    
+    existing = db.query(AdminModel).filter(AdminModel.email == body.email, AdminModel.id != id).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Email đã tồn tại")
+        
+    role = db.query(RoleModel).filter(RoleModel.code == body.role).first()
+    if not role:
+        raise HTTPException(status_code=400, detail="Role không hợp lệ")
+
+    admin.email = body.email
+    admin.full_name = body.full_name
+    admin.roles = [role]
+    
+    if body.password:
+        admin.password_hash = hash_password(body.password)
+        
+    db.commit()
+    db.refresh(admin)
+    return _map_admin(admin)
 
 
 @staff_router.patch("/admins/{id}/status")
 def patch_admin_status(
-    id: int, body: StatusPatch, _admin: CurrentAdmin
+    id: int, body: StatusPatch, _admin: SuperAdmin, db: Annotated[Session, Depends(get_db)]
 ) -> AdminAccount:
-    admin = stub_admin(id)
-    return admin.model_copy(update={"status": body.status})
+    admin = db.query(AdminModel).filter(AdminModel.id == id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên")
+    
+    admin.status = body.status
+    db.commit()
+    db.refresh(admin)
+    return _map_admin(admin)
 
 
 @staff_router.get("/roles")
-def list_roles(_admin: CurrentAdmin) -> list[Role]:
+def list_roles(_admin: SuperAdmin, db: Annotated[Session, Depends(get_db)]) -> list[Role]:
+    roles = db.query(RoleModel).all()
     return [
         Role(
-            code="SUPER_ADMIN",
-            name="Super Admin",
-            permissions=[
-                "MANAGE_ROOM",
-                "MANAGE_BOOKING",
-                "MANAGE_PAYMENT",
-                "APPROVE_REFUND",
-            ],
-        ),
-        Role(
-            code="STAFF",
-            name="Staff",
-            permissions=["MANAGE_ROOM", "MANAGE_BOOKING"],
-        ),
+            code=r.code,
+            name=r.name,
+            permissions=[p.code for p in r.permissions]
+        ) for r in roles
     ]
 
 

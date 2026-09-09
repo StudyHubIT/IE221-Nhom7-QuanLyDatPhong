@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -14,28 +15,75 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { AdminAccount } from "@/lib/mock-data";
+import { apiFetch } from "@/lib/api";
+import { useAdminSession } from "@/components/auth/session-provider";
 
 type StaffFormProps = {
   submitLabel: string;
   mode: "create" | "edit";
-  defaultAdmin?: Pick<AdminAccount, "full_name" | "email" | "role">;
+  adminId?: number;
+  defaultAdmin?: {
+    full_name: string | null;
+    email: string;
+    role: string;
+  };
 };
 
 export function StaffForm({
   submitLabel,
   mode,
+  adminId,
   defaultAdmin = {
-    full_name: "Lê Văn C",
-    email: "staff2@hotel.com",
+    full_name: "",
+    email: "",
     role: "STAFF",
   },
 }: StaffFormProps) {
   const router = useRouter();
+  const { session } = useAdminSession();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push("/admin/staff");
+    if (!session?.token) return;
+    
+    setError(null);
+    setLoading(true);
+    
+    const formData = new FormData(event.currentTarget);
+    const body: Record<string, any> = {
+      full_name: formData.get("full_name"),
+      email: formData.get("email"),
+      role: formData.get("role"),
+    };
+    const password = formData.get("password") as string;
+    if (password) {
+      body.password = password;
+    }
+
+    try {
+      if (mode === "create") {
+        await apiFetch("/api/v1/admin/admins", {
+          method: "POST",
+          token: session.token,
+          body: JSON.stringify(body)
+        });
+      } else if (mode === "edit" && adminId) {
+        await apiFetch(`/api/v1/admin/admins/${adminId}`, {
+          method: "PUT",
+          token: session.token,
+          body: JSON.stringify(body)
+        });
+      }
+      router.push("/admin/staff");
+      router.refresh(); // Tell Next.js router to refresh the current route if needed
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Có lỗi xảy ra");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -47,7 +95,8 @@ export function StaffForm({
             <Input
               id="full-name"
               name="full_name"
-              defaultValue={defaultAdmin.full_name}
+              defaultValue={defaultAdmin.full_name || ""}
+              required
             />
           </div>
           <div className="grid gap-1.5">
@@ -57,6 +106,7 @@ export function StaffForm({
               name="email"
               type="email"
               defaultValue={defaultAdmin.email}
+              required
             />
           </div>
           <div className="grid gap-1.5">
@@ -67,7 +117,6 @@ export function StaffForm({
               id="password"
               name="password"
               type="password"
-              defaultValue={mode === "create" ? "password" : ""}
               required={mode === "create"}
             />
           </div>
@@ -83,12 +132,15 @@ export function StaffForm({
               </SelectContent>
             </Select>
           </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </CardContent>
         <CardFooter className="justify-end gap-2">
           <Button asChild variant="outline">
             <Link href="/admin/staff">Hủy</Link>
           </Button>
-          <Button type="submit">{submitLabel}</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Đang xử lý..." : submitLabel}
+          </Button>
         </CardFooter>
       </Card>
     </form>

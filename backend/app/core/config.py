@@ -8,7 +8,12 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    api_cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3001"]
+    api_cors_origins: Annotated[list[str], NoDecode] = [
+        "http://localhost:3001",
+        "http://localhost:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3000",
+    ]
     database_url: str = (
         "postgresql+psycopg://cms_user:cms_password@localhost:5432/cms_db"
     )
