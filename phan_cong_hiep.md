@@ -23,23 +23,23 @@ hình), [`documents/openapi.yaml`](documents/openapi.yaml) (mở bằng https://
 
 ## Backend — checklist endpoint
 
-- [ ] `POST /api/v1/bookings/{id}/cancel` (P9, trong `bookings.py`) — tạo `REFUNDS(status=REQUESTED)`;
+- [x] `POST /api/v1/bookings/{id}/cancel` (P9, trong `bookings.py`) — tạo `REFUNDS(status=REQUESTED)`;
       chỉ hợp lệ khi `DATPHONG.trang_thai` đang `PENDING`/`CONFIRMED` **và** chưa có `REFUNDS` nào
       của đơn này đang ở `REQUESTED`/`APPROVED` → 400 nếu không hợp lệ
-- [ ] `GET /api/v1/admin/refunds` (A8, trong `admin.py`) — list, mặc định ưu tiên hiển thị
+- [x] `GET /api/v1/admin/refunds` (A8, trong `admin.py`) — list, mặc định ưu tiên hiển thị
       `status=REQUESTED`, lọc theo `status` + tìm kiếm + phân trang
-- [ ] `POST /api/v1/admin/refunds/{id}/approve` (A8) — set `REFUNDS.status=APPROVED` +
+- [x] `POST /api/v1/admin/refunds/{id}/approve` (A8) — set `REFUNDS.status=APPROVED` +
       `approved_by=<admin hiện tại>` **và** `DATPHONG.trang_thai=CANCELLED` (2 việc, cùng 1
       transaction); 400 nếu refund không ở trạng thái `REQUESTED`
-- [ ] `POST /api/v1/admin/refunds/{id}/reject` (A8) — set `REFUNDS.status=REJECTED`, **không**
+- [x] `POST /api/v1/admin/refunds/{id}/reject` (A8) — set `REFUNDS.status=REJECTED`, **không**
       đụng vào `DATPHONG.trang_thai` (đơn giữ nguyên); 400 nếu refund không ở trạng thái `REQUESTED`
 
 ## Frontend — checklist trang
 
-- [ ] Nút "Hủy đặt phòng" + dialog xác nhận (nhập `reason`) trên
+- [x] Nút "Hủy đặt phòng" + dialog xác nhận (nhập `reason`) trên
       `app/(public)/account/bookings/[id]/page.tsx` — **chỉ thêm phần này**, không sửa phần hiển
       thị thông tin đơn (của Task C)
-- [ ] `app/(admin)/admin/refunds/page.tsx` (A8) — nút Duyệt/Từ chối
+- [x] `app/(admin)/admin/refunds/page.tsx` (A8) — nút Duyệt/Từ chối
 
 ## KHÔNG thuộc Task D (dễ nhầm)
 
@@ -63,12 +63,13 @@ Domain nào đụng bảng của domain khác (Task D ghi `DATPHONG.trang_thai` 
 
 ## Definition of Done
 
-- [ ] 4 endpoint ở checklist trả dữ liệu thật
-- [ ] Test: hủy 1 đơn `CONFIRMED` → tạo refund `REQUESTED` thành công; thử hủy lại lần 2 cùng đơn
+- [x] 4 endpoint ở checklist trả dữ liệu thật
+- [x] Test: hủy 1 đơn `CONFIRMED` → tạo refund `REQUESTED` thành công; thử hủy lại lần 2 cùng đơn
       → nhận 400
-- [ ] Test: `approve` 1 refund → kiểm tra cả `REFUNDS.status` lẫn `DATPHONG.trang_thai` đều đổi
+- [x] Test: `approve` 1 refund → kiểm tra cả `REFUNDS.status` lẫn `DATPHONG.trang_thai` đều đổi
       đúng; `reject` 1 refund → `DATPHONG.trang_thai` giữ nguyên
-- [ ] 2 phần frontend (nút hủy + trang admin refunds) hoạt động đúng
+- [x] 2 phần frontend (nút hủy + trang admin refunds) hoạt động đúng — đã nối API thật, 2 trang
+      render 200, endpoint chạy đúng qua curl; bấm thử trên browser để sau khi Task C nối id thật
 
 ## Quy trình tự kiểm trước khi mở PR
 
