@@ -1,10 +1,11 @@
-import { Calendar, Hash, Layers, type LucideIcon } from "lucide-react";
+import { Hotel } from "lucide-react";
 
 import { RoomResultCard } from "@/components/booking/room-result-card";
-import { RoomSearchForm } from "@/components/booking/room-search-form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RoomFilterSidebar } from "@/components/rooms/room-filter-sidebar";
+import { RoomPagination } from "@/components/rooms/room-pagination";
+import { RoomsHero } from "@/components/rooms/rooms-hero";
+import { Card, CardContent } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
-import { formatDate } from "@/lib/format";
 import {
   defaultStay,
   type AvailabilityItem,
@@ -17,6 +18,7 @@ type RoomsPageProps = {
     checkOut?: string;
     type?: string;
     count?: string;
+    page?: string;
   }>;
 };
 
@@ -26,6 +28,9 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
   const checkOut = query.checkOut ?? defaultStay.checkOut;
   const type = query.type ?? "all";
   const count = query.count ?? String(defaultStay.count);
+  const currentPage = Math.max(1, Number(query.page ?? "1"));
+  const pageSize = 6;
+
   const availabilityParams = new URLSearchParams({
     check_in: checkIn,
     check_out: checkOut,
@@ -33,15 +38,24 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
   });
   if (type !== "all") availabilityParams.set("loai_phong_id", type);
 
+  const pagedParams = new URLSearchParams(availabilityParams);
+  pagedParams.set("page", String(currentPage));
+  pagedParams.set("page_size", String(pageSize));
+
   let roomTypes: RoomType[] = [];
-  let results: AvailabilityItem[] = [];
+  let totalAvailableRooms: AvailabilityItem[] = [];
+  let pageResults: AvailabilityItem[] = [];
   let error = false;
 
   try {
-    [roomTypes, results] = await Promise.all([
+    [roomTypes, totalAvailableRooms, pageResults] = await Promise.all([
       apiFetch<RoomType[]>("/api/v1/room-types", { cache: "no-store" }),
       apiFetch<AvailabilityItem[]>(
         `/api/v1/rooms/availability?${availabilityParams.toString()}`,
+        { cache: "no-store" },
+      ),
+      apiFetch<AvailabilityItem[]>(
+        `/api/v1/rooms/availability?${pagedParams.toString()}`,
         { cache: "no-store" },
       ),
     ]);
@@ -49,97 +63,92 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
     error = true;
   }
 
-  const selectedType = roomTypes.find((roomType) => String(roomType.id) === type);
+  const totalItems = totalAvailableRooms.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-6 py-8">
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Tìm kiếm:</span>
-          <Chip icon={Calendar} label={formatDate(checkIn)} />
-          <Chip icon={Calendar} label={formatDate(checkOut)} />
-          <Chip icon={Layers} label={selectedType?.ten_loai ?? "Tất cả"} />
-          <Chip icon={Hash} label={`${count} phòng`} />
-        </div>
-      </section>
+    <main className="w-full min-h-screen bg-background">
+      {/* Full-Bleed Resort Hero Decor Header */}
+      <RoomsHero />
 
-      <RoomSearchForm
-        compact
-        defaultCheckIn={checkIn}
-        defaultCheckOut={checkOut}
-        defaultType={type}
-        defaultCount={count}
-        roomTypes={roomTypes}
-      />
+      {/* Grid Bố cục chính Tràn lề tối đa max-w-[1600px] */}
+      <section className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-8 lg:px-12">
+        <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
+          {/* Sidebar Bộ lọc & Tìm kiếm Tích hợp (Sticky Neo Cố định) */}
+          <RoomFilterSidebar
+            checkIn={checkIn}
+            checkOut={checkOut}
+            type={type}
+            count={count}
+            roomTypes={roomTypes}
+          />
 
-      <section className="grid gap-6 lg:grid-cols-[240px_1fr]">
-        <aside className="h-fit space-y-6 rounded-xl border bg-card p-4">
-          <h2 className="font-semibold">Bộ lọc</h2>
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Loại phòng</p>
-            {["Tất cả", ...roomTypes.map((item) => item.ten_loai)].map(
-              (label, index) => (
-                <label key={label} className="flex items-center gap-2 text-sm">
-                  <Checkbox defaultChecked={index === 0} />
-                  {label}
-                </label>
-              ),
-            )}
-          </div>
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Khoảng giá / đêm</p>
-            {["Dưới 600.000đ", "600.000đ – 1.000.000đ", "Trên 1.000.000đ"].map(
-              (label) => (
-                <label key={label} className="flex items-center gap-2 text-sm">
-                  <Checkbox />
-                  {label}
-                </label>
-              ),
-            )}
-          </div>
-        </aside>
+          {/* Danh sách phòng kết quả */}
+          <div className="space-y-5">
+            <div className="flex items-center justify-between border-b pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-foreground sm:text-2xl">
+                  Kết quả phòng khả dụng
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Tìm thấy <span className="text-primary font-bold">{totalItems}</span> phòng trống phù hợp với khoảng thời gian bạn chọn.
+                </p>
+              </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="font-medium">{results.length} phòng trống</p>
-            <p className="text-sm text-muted-foreground">
-              Sắp xếp: Giá tăng dần
-            </p>
-          </div>
-          <div className="space-y-3">
-            {error ? (
-              <p className="text-muted-foreground">
-                Không thể tải phòng trống. Vui lòng thử lại sau.
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                Sắp xếp theo: <span className="font-semibold text-foreground">Giá tăng dần</span>
               </p>
-            ) : results.length === 0 ? (
-              <p className="text-muted-foreground">
-                Không có phòng trống phù hợp. Vui lòng thử ngày hoặc loại phòng khác.
-              </p>
-            ) : results.map((room) => (
-              <RoomResultCard
-                key={room.id}
-                room={room}
-                detailHref={`/rooms/${room.loai_phong_id}?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`}
-              />
-            ))}
+            </div>
+
+            <div className="space-y-4">
+              {error ? (
+                <Card className="border-dashed py-12 text-center">
+                  <CardContent className="space-y-2">
+                    <p className="text-sm font-semibold text-destructive">
+                      Không thể kết nối đến máy chủ tìm kiếm.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Vui lòng làm mới trang hoặc thử lại sau vài phút.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : pageResults.length === 0 ? (
+                <Card className="border-dashed py-12 text-center">
+                  <CardContent className="space-y-4">
+                    <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                      <Hotel className="size-8 stroke-[1.5]" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-semibold">Không tìm thấy phòng trống</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Rất tiếc, tất cả các phòng đã được lấp đầy trong khoảng thời gian bạn chọn. Vui lòng thay đổi ngày trên bộ lọc bên trái.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {pageResults.map((room) => (
+                    <RoomResultCard
+                      key={room.id}
+                      room={room}
+                      detailHref={`/rooms/${room.loai_phong_id}?checkIn=${encodeURIComponent(checkIn)}&checkOut=${encodeURIComponent(checkOut)}`}
+                    />
+                  ))}
+
+                  {/* Thanh phân trang Paging đàng hoàng */}
+                  <RoomPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={pageSize}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </div>
       </section>
     </main>
-  );
-}
-
-function Chip({
-  icon: Icon,
-  label,
-}: {
-  icon: LucideIcon;
-  label: string;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs">
-      <Icon className="size-3.5 text-muted-foreground" />
-      {label}
-    </span>
   );
 }

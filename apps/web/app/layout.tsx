@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 
 import "./globals.css";
 
+import { CartProvider } from "@/components/booking/cart-provider";
+
 const inter = Inter({
   subsets: ["latin", "vietnamese"],
   variable: "--font-sans",
@@ -29,7 +31,9 @@ export default function RootLayout({
     <html lang="vi" className={cn("font-sans", inter.variable)}>
       <body className="min-h-screen antialiased">
         <UserSessionProvider>
-          <AdminSessionProvider>{children}</AdminSessionProvider>
+          <AdminSessionProvider>
+            <CartProvider>{children}</CartProvider>
+          </AdminSessionProvider>
         </UserSessionProvider>
       </body>
     </html>

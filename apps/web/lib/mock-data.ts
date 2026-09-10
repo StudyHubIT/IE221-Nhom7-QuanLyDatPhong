@@ -20,7 +20,8 @@ export type BookingStatus =
   | "CHECKED_OUT"
   | "CANCELLED";
 
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+export type PaymentMethod = "BANKING" | "CASH";
 export type RefundStatus = "REQUESTED" | "APPROVED" | "REJECTED";
 
 export type BookingRoom = {

@@ -34,6 +34,7 @@ export const paymentStatusLabel: Record<PaymentStatus, string> = {
   PENDING: "PENDING",
   PAID: "Đã thanh toán",
   FAILED: "Thất bại",
+  REFUNDED: "Đã hoàn tiền",
 };
 
 export const refundStatusLabel: Record<RefundStatus, string> = {
