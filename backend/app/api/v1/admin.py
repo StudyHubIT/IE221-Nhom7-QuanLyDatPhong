@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -42,18 +42,15 @@ from app.schemas.hotel import (
     TokenResponse,
 )
 
+from app.api.v1.admin_bookings import bookings_router
+from app.api.v1.admin_payments import payments_router
+
 auth_router = APIRouter(prefix="/api/v1/admin/auth", tags=["AdminAuth"])
 dashboard_router = APIRouter(prefix="/api/v1/admin", tags=["AdminDashboard"])
 room_types_router = APIRouter(
     prefix="/api/v1/admin/room-types", tags=["AdminRoomTypes"]
 )
 rooms_router = APIRouter(prefix="/api/v1/admin/rooms", tags=["AdminRooms"])
-bookings_router = APIRouter(
-    prefix="/api/v1/admin/bookings", tags=["AdminBookings"]
-)
-payments_router = APIRouter(
-    prefix="/api/v1/admin/payments", tags=["AdminPayments"]
-)
 refunds_router = APIRouter(prefix="/api/v1/admin/refunds", tags=["AdminRefunds"])
 customers_router = APIRouter(
     prefix="/api/v1/admin/customers", tags=["AdminCustomers"]
@@ -390,43 +387,7 @@ def patch_room_status(
     return _room_response(room, room_type)
 
 
-@bookings_router.get("")
-def list_admin_bookings(
-    _admin: CurrentAdmin,
-    status: str | None = None,
-    user_id: int | None = None,
-    q: str | None = None,
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
-    from_date: date | None = Query(default=None, alias="from"),
-    to_date: date | None = Query(default=None, alias="to"),
-) -> Paginated[Booking]:
-    return _empty_page(page, page_size)
 
-
-@bookings_router.get("/{id}")
-def get_admin_booking(id: int, _admin: CurrentAdmin) -> Booking:
-    return stub_booking(booking_id=id)
-
-
-@bookings_router.patch("/{id}/status")
-def patch_booking_status(
-    id: int, body: BookingStatusPatch, _admin: CurrentAdmin
-) -> Booking:
-    booking = stub_booking(booking_id=id)
-    return booking.model_copy(update={"trang_thai": body.trang_thai})
-
-
-@payments_router.get("")
-def list_payments(
-    _admin: CurrentAdmin,
-    status: str | None = None,
-    method: str | None = None,
-    q: str | None = None,
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
-) -> Paginated[Payment]:
-    return _empty_page(page, page_size)
 
 
 @refunds_router.get("")

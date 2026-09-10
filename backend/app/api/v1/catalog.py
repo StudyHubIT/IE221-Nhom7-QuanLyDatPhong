@@ -81,6 +81,7 @@ def get_public_room_type(
     room_count = db.scalar(
         select(func.count(RoomModel.id)).where(RoomModel.loai_phong_id == id)
     )
+    
     available_rooms = db.scalars(
         _available_rooms_statement(id, check_in, check_out)
     ).all()
@@ -99,6 +100,8 @@ def search_availability(
     count: int | None = Query(default=None, ge=1),
     min_price: float | None = None,
     max_price: float | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int | None = Query(default=None, ge=1, le=100),
 ) -> list[AvailabilityItem]:
     if check_out <= check_in:
         raise HTTPException(status_code=400, detail="check_out must be after check_in")
@@ -110,6 +113,9 @@ def search_availability(
         statement = statement.where(RoomTypeModel.gia_co_ban >= min_price)
     if max_price is not None:
         statement = statement.where(RoomTypeModel.gia_co_ban <= max_price)
+
+    if page is not None and page_size is not None:
+        statement = statement.offset((page - 1) * page_size).limit(page_size)
 
     rows = db.execute(statement.add_columns(RoomTypeModel)).all()
     return [
