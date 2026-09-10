@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, LogIn } from "lucide-react";
 
 import { useAdminSession } from "@/components/auth/session-provider";
@@ -13,8 +13,18 @@ import { apiFetch, ApiError } from "@/lib/api";
 import type { AdminProfile } from "@/lib/session";
 
 export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center text-sm">Đang tải...</div>}>
+      <AdminLoginForm />
+    </Suspense>
+  );
+}
+
+function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAdminSession();
+  const redirectTo = searchParams.get("redirect") ?? "/admin";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +47,7 @@ export default function AdminLoginPage() {
         token: access_token,
       });
       login({ token: access_token, admin });
-      router.push("/admin");
+      router.push(redirectTo);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Đăng nhập thất bại");
     } finally {

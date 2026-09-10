@@ -30,6 +30,7 @@ import { CancelBookingDialog } from "@/components/booking/cancel-booking-dialog"
 import {
   BookingStatusBadge,
   PaymentStatusBadge,
+  RefundStatusBadge,
 } from "@/components/booking/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ import {
   nightCount,
   paymentMethodLabel,
 } from "@/lib/format";
-import type { BookingStatus, PaymentMethod, PaymentStatus } from "@/lib/room-api-types";
+import type { BookingStatus, PaymentMethod, PaymentStatus, RefundStatus } from "@/lib/room-api-types";
 
 type BookingDetail = {
   id: number;
@@ -62,12 +63,17 @@ type BookingDetail = {
     method: PaymentMethod;
     status: PaymentStatus;
   };
+  refund?: {
+    id: number;
+    status: RefundStatus;
+    reason?: string;
+  } | null;
 };
 
 export default function MyBookingDetailPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { session } = useUserSession();
+  const { session, isHydrated } = useUserSession();
 
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,6 +100,15 @@ export default function MyBookingDetailPage() {
   };
 
   const nights = booking ? nightCount(booking.check_in, booking.check_out) : 1;
+
+  if (!isHydrated || (session && isLoading)) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-6 py-16 text-center text-muted-foreground animate-pulse flex flex-col items-center gap-3">
+        <div className="size-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <span className="text-sm font-semibold">Đang tải thông tin chi tiết vé lưu trú...</span>
+      </main>
+    );
+  }
 
   // Nếu người dùng chưa đăng nhập -> Hiển thị Auth Guard Banner
   if (!session) {
@@ -212,8 +227,11 @@ export default function MyBookingDetailPage() {
             >
               <Printer className="mr-1.5 size-3.5" /> In cuống vé
             </Button>
-            {booking.trang_thai === "CONFIRMED" || booking.trang_thai === "PENDING" ? (
+            {(booking.trang_thai === "CONFIRMED" || booking.trang_thai === "PENDING") &&
+            (!booking.refund || booking.refund.status === "REJECTED") ? (
               <CancelBookingDialog bookingId={booking.id} />
+            ) : booking.refund?.status ? (
+              <RefundStatusBadge status={booking.refund.status} />
             ) : null}
           </div>
         </div>

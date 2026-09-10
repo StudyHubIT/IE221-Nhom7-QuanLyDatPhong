@@ -77,6 +77,8 @@ export default function CheckoutPage() {
   const total = rawSubtotal + vatTax;
 
   const handleCheckout = async () => {
+    if (isLoading) return;
+
     if (!session) {
       router.push("/login?redirect=/checkout");
       return;
@@ -113,13 +115,12 @@ export default function CheckoutPage() {
       clearCart();
       router.push(`/checkout/success?id=${res.id}`);
     } catch (err) {
+      setIsLoading(false);
       setError(
         err instanceof ApiError
           ? err.message
           : "Có lỗi xảy ra khi xử lý đơn đặt phòng."
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 

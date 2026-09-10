@@ -58,13 +58,13 @@ hiện **đúng một lần** trong 4 task (trừ các endpoint đã xong ở Ta
 | PUT | `/api/v1/admin/rooms/{id}` | **B** — [Hoàng](phan_cong_hoang.md) |
 | DELETE | `/api/v1/admin/rooms/{id}` | **B** — [Hoàng](phan_cong_hoang.md) |
 | PATCH | `/api/v1/admin/rooms/{id}/status` | **B** — [Hoàng](phan_cong_hoang.md) |
-| GET | `/api/v1/bookings` | **C** — [Vũ](phan_cong_vu.md) |
-| POST | `/api/v1/bookings` | **C** — [Vũ](phan_cong_vu.md) |
-| GET | `/api/v1/bookings/{id}` | **C** — [Vũ](phan_cong_vu.md) |
-| GET | `/api/v1/admin/bookings` | **C** — [Vũ](phan_cong_vu.md) |
-| GET | `/api/v1/admin/bookings/{id}` | **C** — [Vũ](phan_cong_vu.md) |
-| PATCH | `/api/v1/admin/bookings/{id}/status` | **C** — [Vũ](phan_cong_vu.md) |
-| GET | `/api/v1/admin/payments` | **C** — [Vũ](phan_cong_vu.md) |
+| GET | `/api/v1/bookings` | ✅ DONE (**C** — [Vũ](phan_cong_vu.md)) |
+| POST | `/api/v1/bookings` | ✅ DONE (**C** — [Vũ](phan_cong_vu.md)) |
+| GET | `/api/v1/bookings/{id}` | ✅ DONE (**C** — [Vũ](phan_cong_vu.md)) |
+| GET | `/api/v1/admin/bookings` | ✅ DONE (**C** — [Vũ](phan_cong_vu.md)) |
+| GET | `/api/v1/admin/bookings/{id}` | ✅ DONE (**C** — [Vũ](phan_cong_vu.md)) |
+| PATCH | `/api/v1/admin/bookings/{id}/status` | ✅ DONE (**C** — [Vũ](phan_cong_vu.md)) |
+| GET | `/api/v1/admin/payments` | ✅ DONE (**C** — [Vũ](phan_cong_vu.md)) |
 | POST | `/api/v1/bookings/{id}/cancel` | **D** — [Hiệp](phan_cong_hiep.md) |
 | GET | `/api/v1/admin/refunds` | **D** — [Hiệp](phan_cong_hiep.md) |
 | POST | `/api/v1/admin/refunds/{id}/approve` | **D** — [Hiệp](phan_cong_hiep.md) |
