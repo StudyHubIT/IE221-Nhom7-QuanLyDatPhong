@@ -5,16 +5,24 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Calendar,
+  Check,
   ChevronLeft,
   Clock,
+  Copy,
   CreditCard,
   DoorOpen,
   Hotel,
   Lock,
   LogIn,
+  MapPin,
+  Printer,
+  QrCode,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
+  UserCheck,
   UserPlus,
+  Wifi,
 } from "lucide-react";
 
 import { useUserSession } from "@/components/auth/session-provider";
@@ -23,13 +31,15 @@ import {
   BookingStatusBadge,
   PaymentStatusBadge,
 } from "@/components/booking/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
 import {
   formatDate,
   formatDateRange,
   formatVnd,
+  nightCount,
   paymentMethodLabel,
 } from "@/lib/format";
 import type { BookingStatus, PaymentMethod, PaymentStatus } from "@/lib/room-api-types";
@@ -41,6 +51,9 @@ type BookingDetail = {
   check_out: string;
   created_at: string;
   trang_thai: BookingStatus;
+  user_name?: string;
+  user_email?: string;
+  user_phone?: string;
   rooms: { phong_id: number; so_phong: string; ten_loai: string; don_gia: number }[];
   total: number;
   payment?: {
@@ -58,6 +71,7 @@ export default function MyBookingDetailPage() {
 
   const [booking, setBooking] = useState<BookingDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!id || !session) {
@@ -72,21 +86,30 @@ export default function MyBookingDetailPage() {
       .finally(() => setIsLoading(false));
   }, [id, session]);
 
+  const handleCopyCode = () => {
+    if (!booking) return;
+    navigator.clipboard.writeText(booking.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const nights = booking ? nightCount(booking.check_in, booking.check_out) : 1;
+
   // Nếu người dùng chưa đăng nhập -> Hiển thị Auth Guard Banner
   if (!session) {
     return (
       <main className="mx-auto w-full max-w-4xl px-4 py-16 md:px-6">
-        <Card className="border-border/80 shadow-xl overflow-hidden text-center p-8 md:p-12">
+        <Card className="border-border/80 shadow-2xl overflow-hidden rounded-[32px] bg-card/90 backdrop-blur-xl text-center p-8 md:p-12">
           <CardContent className="space-y-6 p-0 max-w-lg mx-auto">
-            <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary shadow-inner">
+            <div className="mx-auto flex size-20 items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-inner border border-primary/20">
               <Lock className="size-10 stroke-[2]" />
             </div>
 
             <div className="space-y-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-700 dark:text-amber-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-4 py-1 text-xs font-extrabold text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 <ShieldAlert className="size-3.5" /> YÊU CẦU ĐĂNG NHẬP
               </span>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
                 Vui lòng đăng nhập để xem chi tiết đơn phòng
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -95,12 +118,12 @@ export default function MyBookingDetailPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <Button asChild size="lg" className="w-full sm:w-auto rounded-xl font-bold px-8 shadow-md shadow-primary/20">
+              <Button asChild size="lg" className="w-full sm:w-auto rounded-2xl font-extrabold px-8 shadow-lg shadow-primary/25">
                 <Link href={`/login?redirect=/account/bookings/${id}`}>
                   <LogIn className="mr-2 size-4" /> Đăng nhập ngay
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto rounded-xl font-medium px-6">
+              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto rounded-2xl font-bold px-6 border-border/80">
                 <Link href={`/login?redirect=/account/bookings/${id}&tab=register`}>
                   <UserPlus className="mr-2 size-4" /> Tạo tài khoản mới
                 </Link>
@@ -114,8 +137,9 @@ export default function MyBookingDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-6 py-16 text-center text-muted-foreground animate-pulse">
-        Đang tải thông tin chi tiết đơn đặt phòng...
+      <main className="mx-auto w-full max-w-6xl px-6 py-16 text-center text-muted-foreground animate-pulse flex flex-col items-center gap-3">
+        <div className="size-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <span className="text-sm font-semibold">Đang tải thông tin chi tiết vé lưu trú...</span>
       </main>
     );
   }
@@ -124,13 +148,13 @@ export default function MyBookingDetailPage() {
     return (
       <main className="mx-auto w-full max-w-6xl space-y-4 px-6 py-16 text-center">
         <Hotel className="mx-auto size-12 text-muted-foreground stroke-[1.5]" />
-        <h1 className="text-xl font-semibold">Không tìm thấy đơn đặt phòng</h1>
+        <h1 className="text-xl font-bold">Không tìm thấy đơn đặt phòng</h1>
         <p className="text-sm text-muted-foreground">
           Đơn đặt phòng này không tồn tại hoặc bạn không có quyền truy cập.
         </p>
-        <Button asChild variant="outline" className="rounded-xl">
+        <Button asChild variant="outline" className="rounded-2xl border-border/80">
           <Link href="/account/bookings">
-            <ChevronLeft className="mr-1 size-4" /> Quay lại danh sách đơn
+            <ChevronLeft className="mr-1 size-4" /> Quay lại danh sách đơn của tôi
           </Link>
         </Button>
       </main>
@@ -138,123 +162,199 @@ export default function MyBookingDetailPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 md:px-6">
+    <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 md:px-6">
       {/* Nút quay lại */}
       <Link
         href="/account/bookings"
-        className="inline-flex items-center text-xs font-medium text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center text-xs font-bold text-muted-foreground hover:text-primary transition-colors"
       >
-        <ChevronLeft className="mr-1 size-4" /> Quay lại danh sách đơn của tôi
+        <ChevronLeft className="mr-1 size-4" /> Quay lại danh sách đơn lưu trú của tôi
       </Link>
 
-      {/* Header chi tiết đơn */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground font-mono">
-              Đơn đặt phòng {booking.code}
-            </h1>
-            <BookingStatusBadge status={booking.trang_thai} />
+      {/* Thẻ Vé Đặt Phòng Resort (Resort Ticket Voucher Card) */}
+      <Card className="border-border/80 shadow-2xl overflow-hidden rounded-[32px] bg-card/90 backdrop-blur-xl">
+        {/* Banner Header Vé Kim Loại Metallic */}
+        <div className="bg-gradient-to-r from-primary/15 via-primary/5 to-amber-500/10 border-b p-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="block text-[11px] uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-1.5">
+              <Sparkles className="size-3 text-primary" /> Mã Vé Đặt Phòng (Booking Pass Code)
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-black text-primary font-mono tracking-wider">
+                {booking.code}
+              </span>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={handleCopyCode}
+                className="h-8 rounded-xl px-2.5 text-xs font-semibold gap-1.5 border-border/80"
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" /> Đã chép
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5" /> Sao chép
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Clock className="size-3.5" /> Ngày đặt: {formatDate(booking.created_at)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="size-3.5 text-primary" /> Lưu trú:{" "}
-              {formatDateRange(booking.check_in, booking.check_out)}
-            </span>
+
+          <div className="flex items-center gap-3">
+            <BookingStatusBadge status={booking.trang_thai} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="rounded-xl text-xs font-semibold h-9"
+            >
+              <Printer className="mr-1.5 size-3.5" /> In cuống vé
+            </Button>
+            {booking.trang_thai === "CONFIRMED" || booking.trang_thai === "PENDING" ? (
+              <CancelBookingDialog bookingId={booking.id} />
+            ) : null}
           </div>
         </div>
 
-        {/* Nút Hủy đơn (Nếu ở trạng thái CONFIRMED hoặc PENDING) */}
-        {booking.trang_thai === "CONFIRMED" || booking.trang_thai === "PENDING" ? (
-          <CancelBookingDialog bookingId={booking.id} />
-        ) : null}
-      </div>
+        <CardContent className="p-6 md:p-8 space-y-6">
+          {/* Lịch Lưu Trú 2 Cột Check-in / Check-out */}
+          <div className="grid gap-4 sm:grid-cols-2 bg-muted/40 p-5 rounded-2xl border border-border/50">
+            <div className="space-y-1">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                <Calendar className="size-3.5 text-primary" /> Ngày nhận phòng (Check-in)
+              </span>
+              <span className="font-extrabold text-foreground block text-base sm:text-lg">
+                {booking.check_in} (Từ 14:00)
+              </span>
+            </div>
+            <div className="space-y-1 sm:border-l sm:pl-4 border-border/60">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                <Clock className="size-3.5 text-primary" /> Ngày trả phòng (Check-out)
+              </span>
+              <span className="font-extrabold text-foreground block text-base sm:text-lg">
+                {booking.check_out} (Trước 12:00)
+              </span>
+            </div>
+          </div>
 
-      {/* Grid thông tin chi tiết */}
-      <section className="grid gap-8 lg:grid-cols-2">
-        {/* Card danh sách phòng */}
-        <Card className="border-border/60 shadow-sm">
-          <CardHeader className="border-b p-5">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <DoorOpen className="size-5 text-primary" />
-              Danh sách phòng lưu trú ({booking.rooms.length} phòng)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 space-y-3">
-            {booking.rooms.map((room) => (
-              <div
-                key={room.so_phong}
-                className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-muted/20"
-              >
-                <div className="space-y-1">
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-lg">
-                    Phòng {room.so_phong}
+          {/* Thông tin Khách hàng */}
+          <div className="space-y-2 bg-primary/5 p-4 rounded-2xl border border-primary/15">
+            <span className="font-bold text-foreground text-xs uppercase tracking-wider text-primary flex items-center gap-1.5">
+              <UserCheck className="size-4" /> Thông tin chủ đơn đặt phòng
+            </span>
+            <div className="grid gap-2 sm:grid-cols-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">Tài khoản đặt: </span>
+                <span className="font-bold text-foreground">{session.user.full_name || booking.user_name || "Khách hàng"}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Email đăng ký: </span>
+                <span className="font-bold text-foreground">{session.user.email || booking.user_email || "—"}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Thời gian nghỉ: </span>
+                <span className="font-bold text-primary">{nights} đêm lưu trú</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Ngày khởi tạo: </span>
+                <span className="font-bold text-foreground">{formatDate(booking.created_at)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid 2 Cột: Danh sách phòng & Thanh toán */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Cột 1: Danh sách phòng */}
+            <div className="space-y-3">
+              <span className="font-bold text-foreground text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                <span>Danh sách phòng ({booking.rooms.length} phòng)</span>
+                <span className="text-[11px] font-normal text-muted-foreground">Miễn phí hủy trước 24h</span>
+              </span>
+              <div className="space-y-2.5">
+                {booking.rooms.map((r) => (
+                  <div
+                    key={r.phong_id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-border/70 bg-card/80 hover:border-primary/40 transition-all gap-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center gap-1 rounded-xl bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20 shrink-0">
+                        <DoorOpen className="size-3.5" /> Phòng {r.so_phong}
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-foreground text-sm">{r.ten_loai}</h4>
+                        <span className="text-[11px] text-muted-foreground flex items-center gap-2 pt-0.5">
+                          <Wifi className="size-3 text-primary" /> Wifi 5G
+                          <span>·</span>
+                          <span>Bữa sáng Buffets</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right border-t sm:border-t-0 pt-2 sm:pt-0">
+                      <span className="text-xs text-muted-foreground block">{nights} đêm × {formatVnd(r.don_gia)}</span>
+                      <span className="font-extrabold text-primary text-base">{formatVnd(r.don_gia * nights)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Cột 2: Giao dịch thanh toán */}
+            <div className="space-y-3">
+              <span className="font-bold text-foreground text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <CreditCard className="size-4 text-primary" /> Thông tin giao dịch thanh toán
+              </span>
+              <div className="space-y-3 p-4 rounded-2xl border border-border/70 bg-card/80 text-xs">
+                <div className="flex justify-between items-center border-b pb-2.5">
+                  <span className="text-muted-foreground">Phương thức</span>
+                  <span className="font-bold text-foreground">
+                    {booking.payment
+                      ? paymentMethodLabel[booking.payment.method] ?? booking.payment.method
+                      : "Thanh toán tại Lễ tân"}
                   </span>
-                  <p className="text-sm font-semibold text-foreground">{room.ten_loai}</p>
                 </div>
-                <div className="text-right">
-                  <span className="block text-xs text-muted-foreground">Đơn giá</span>
-                  <span className="font-bold text-primary">{formatVnd(room.don_gia)}/đêm</span>
+
+                <div className="flex justify-between items-center border-b pb-2.5">
+                  <span className="text-muted-foreground">Trạng thái giao dịch</span>
+                  {booking.payment ? (
+                    <PaymentStatusBadge status={booking.payment.status} />
+                  ) : (
+                    <Badge variant="outline" className="rounded-full text-[10px]">Chưa thanh toán</Badge>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-bold text-foreground text-sm">Tổng tiền đơn</span>
+                  <span className="text-xl font-black text-primary">
+                    {formatVnd(booking.total)}
+                  </span>
                 </div>
               </div>
-            ))}
-
-            <div className="border-t pt-4 flex items-baseline justify-between">
-              <span className="text-sm font-bold text-foreground">Tổng cộng chi phí phòng</span>
-              <span className="text-xl font-extrabold text-primary">{formatVnd(booking.total)}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Card giao dịch thanh toán */}
-        <Card className="border-border/60 shadow-sm">
-          <CardHeader className="border-b p-5">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <CreditCard className="size-5 text-primary" />
-              Thông tin thanh toán
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 space-y-4 text-sm">
-            <div className="flex justify-between items-center border-b pb-3">
-              <span className="text-muted-foreground">Phương thức thanh toán</span>
-              <span className="font-semibold text-foreground">
-                {booking.payment
-                  ? paymentMethodLabel[booking.payment.method] ?? booking.payment.method
-                  : "—"}
-              </span>
+          {/* Mã QR Check-in Tự động & Hướng dẫn nhận phòng */}
+          <div className="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-2xl bg-muted/30 border border-border/60">
+            <div className="relative size-28 shrink-0 rounded-2xl bg-white p-2 border shadow-md flex items-center justify-center">
+              <QrCode className="size-24 text-slate-900" />
             </div>
-
-            <div className="flex justify-between items-center border-b pb-3">
-              <span className="text-muted-foreground">Số tiền thanh toán</span>
-              <span className="font-extrabold text-primary text-base">
-                {formatVnd(booking.payment?.amount ?? booking.total)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Trạng thái giao dịch</span>
-              {booking.payment ? (
-                <PaymentStatusBadge status={booking.payment.status} />
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
-            </div>
-
-            <div className="rounded-xl bg-muted/40 p-4 space-y-1.5 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-                Chính sách hủy phòng & hoàn tiền
-              </div>
-              <p>
-                Quý khách có thể gửi yêu cầu hủy phòng trước ngày nhận phòng. Tiền thanh toán sẽ được hệ thống xem xét và hoàn trả theo quy định của khách sạn.
+            <div className="space-y-1.5 text-center sm:text-left">
+              <h4 className="font-extrabold text-foreground text-sm flex items-center justify-center sm:justify-start gap-1.5">
+                <MapPin className="size-4 text-primary" /> Mã QR Thủ Tục Nhận Phòng Nhanh
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Vui lòng trình mã QR này hoặc cung cấp Mã Đặt Phòng <span className="font-bold text-foreground">{booking.code}</span> tại quầy Lễ Tân khi đến khách sạn để nhận chìa khóa phòng tức thì.
               </p>
             </div>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground border-t pt-4">
+            <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Thông tin lưu trú được bảo mật an toàn 100% trên hệ thống HotelBook</span>
+          </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }
