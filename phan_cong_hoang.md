@@ -23,37 +23,37 @@ hình), [`documents/openapi.yaml`](documents/openapi.yaml) (mở bằng https://
 
 ## Backend — checklist endpoint
 
-- [ ] `GET /api/v1/room-types` (P1) — list `LOAIPHONG` kèm `room_count`
-- [ ] `GET /api/v1/room-types/{id}` (P3) — chi tiết loại phòng + `available_rooms` (join `PHONG`,
+- [x] `GET /api/v1/room-types` (P1) — list `LOAIPHONG` kèm `room_count`
+- [x] `GET /api/v1/room-types/{id}` (P3) — chi tiết loại phòng + `available_rooms` (join `PHONG`,
       loại trừ phòng đang bị giữ bởi `CT_DATPHONG`→`DATPHONG` giao khoảng `check_in`/`check_out`
       nếu query truyền vào, và `PHONG.trang_thai ≠ MAINTENANCE`)
-- [ ] `GET /api/v1/rooms/availability` (P2, P4) — tìm phòng trống theo ngày + loại phòng + số
+- [x] `GET /api/v1/rooms/availability` (P2, P4) — tìm phòng trống theo ngày + loại phòng + số
       lượng + khoảng giá (logic lọc mô tả chi tiết ở mục P2 `screens.md`)
-- [ ] `GET /api/v1/admin/room-types` (A3) — list + tìm kiếm `q` + phân trang
-- [ ] `POST /api/v1/admin/room-types` (A3) — tạo mới
-- [ ] `GET /api/v1/admin/room-types/{id}` (A3) — chi tiết (form sửa)
-- [ ] `PUT /api/v1/admin/room-types/{id}` (A3) — cập nhật
-- [ ] `DELETE /api/v1/admin/room-types/{id}` (A3) — xóa, chặn 409 nếu còn `PHONG` tham chiếu
-- [ ] `GET /api/v1/admin/rooms` (A4) — list + lọc `loai_phong_id`/`trang_thai` + tìm kiếm + phân trang
-- [ ] `POST /api/v1/admin/rooms` (A4) — tạo mới, chặn 409 nếu `so_phong` trùng
-- [ ] `GET /api/v1/admin/rooms/{id}` (A4) — chi tiết (form sửa)
-- [ ] `PUT /api/v1/admin/rooms/{id}` (A4) — cập nhật
-- [ ] `DELETE /api/v1/admin/rooms/{id}` (A4) — xóa, chặn 409 nếu phòng đang có `CT_DATPHONG` của
+- [x] `GET /api/v1/admin/room-types` (A3) — list + tìm kiếm `q` + phân trang
+- [x] `POST /api/v1/admin/room-types` (A3) — tạo mới
+- [x] `GET /api/v1/admin/room-types/{id}` (A3) — chi tiết (form sửa)
+- [x] `PUT /api/v1/admin/room-types/{id}` (A3) — cập nhật
+- [x] `DELETE /api/v1/admin/room-types/{id}` (A3) — xóa, chặn 409 nếu còn `PHONG` tham chiếu
+- [x] `GET /api/v1/admin/rooms` (A4) — list + lọc `loai_phong_id`/`trang_thai` + tìm kiếm + phân trang
+- [x] `POST /api/v1/admin/rooms` (A4) — tạo mới, chặn 409 nếu `so_phong` trùng
+- [x] `GET /api/v1/admin/rooms/{id}` (A4) — chi tiết (form sửa)
+- [x] `PUT /api/v1/admin/rooms/{id}` (A4) — cập nhật
+- [x] `DELETE /api/v1/admin/rooms/{id}` (A4) — xóa, chặn 409 nếu phòng đang có `CT_DATPHONG` của
       đơn chưa hoàn tất (`trang_thai` khác `CANCELLED`/`CHECKED_OUT`)
-- [ ] `PATCH /api/v1/admin/rooms/{id}/status` (A4) — đổi `trang_thai` (nút "Bảo trì"), chặn nếu
+- [x] `PATCH /api/v1/admin/rooms/{id}/status` (A4) — đổi `trang_thai` (nút "Bảo trì"), chặn nếu
       đang gắn đơn chưa hoàn tất tương tự như xóa
 
 ## Frontend — checklist trang
 
-- [ ] `app/(public)/page.tsx` (P1)
-- [ ] `app/(public)/rooms/page.tsx` (P2)
-- [ ] `app/(public)/rooms/[id]/page.tsx` (P3)
-- [ ] `app/(admin)/admin/room-types/page.tsx`
-- [ ] `app/(admin)/admin/room-types/new/page.tsx`
-- [ ] `app/(admin)/admin/room-types/[id]/edit/page.tsx`
-- [ ] `app/(admin)/admin/rooms/page.tsx`
-- [ ] `app/(admin)/admin/rooms/new/page.tsx`
-- [ ] `app/(admin)/admin/rooms/[id]/edit/page.tsx`
+- [x] `app/(public)/page.tsx` (P1)
+- [x] `app/(public)/rooms/page.tsx` (P2)
+- [x] `app/(public)/rooms/[id]/page.tsx` (P3)
+- [x] `app/(admin)/admin/room-types/page.tsx`
+- [x] `app/(admin)/admin/room-types/new/page.tsx`
+- [x] `app/(admin)/admin/room-types/[id]/edit/page.tsx`
+- [x] `app/(admin)/admin/rooms/page.tsx`
+- [x] `app/(admin)/admin/rooms/new/page.tsx`
+- [x] `app/(admin)/admin/rooms/[id]/edit/page.tsx`
 
 ## KHÔNG thuộc Task B (dễ nhầm)
 
@@ -75,10 +75,10 @@ của domain khác. Nếu cần đổi, báo trong nhóm trước.
 
 ## Definition of Done
 
-- [ ] 14 endpoint ở checklist trả dữ liệu thật
-- [ ] Test qua Swagger UI: CRUD loại phòng, CRUD phòng, tìm phòng trống theo ngày cho kết quả đúng
-- [ ] Test case xóa loại phòng đang có phòng → nhận 409 (không phải 500)
-- [ ] 9 trang frontend hiển thị dữ liệu thật
+- [x] 14 endpoint ở checklist trả dữ liệu thật
+- [x] Test qua Swagger UI: CRUD loại phòng, CRUD phòng, tìm phòng trống theo ngày cho kết quả đúng
+- [x] Test case xóa loại phòng đang có phòng → nhận 409 (không phải 500)
+- [x] 9 trang frontend hiển thị dữ liệu thật
 
 ## Quy trình tự kiểm trước khi mở PR
 
