@@ -21,6 +21,9 @@ logs:
 migrate:
 	cd backend && poetry run alembic upgrade head
 
+migrate-docker:
+	docker compose exec api poetry run alembic upgrade head
+
 migration:
 	@if [ -z "$(name)" ]; then echo "Usage: make migration name=create_pages_table"; exit 1; fi
 	cd backend && poetry run alembic revision --autogenerate -m "$(name)"
@@ -28,8 +31,12 @@ migration:
 seed:
 	cd backend && poetry run python -m app.db_seed
 
+seed-docker:
+	docker compose exec api poetry run python -m app.db_seed
+
 shell-api:
 	cd backend && poetry run bash
 
 shell-web:
 	cd apps/web && /bin/sh
+

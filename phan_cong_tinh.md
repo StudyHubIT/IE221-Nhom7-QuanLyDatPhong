@@ -25,23 +25,23 @@ hình), [`documents/openapi.yaml`](documents/openapi.yaml) (mở bằng https://
 
 ## Backend — checklist endpoint (trong `admin.py`)
 
-- [ ] `GET /api/v1/admin/customers` (A9) — list `USERS`, lọc `status`, tìm kiếm `q` (email/tên/sđt), phân trang
-- [ ] `PATCH /api/v1/admin/customers/{id}/status` (A9) — khóa/mở tài khoản khách (`ACTIVE`↔`LOCKED`)
-- [ ] `GET /api/v1/admin/admins` (A10) — list `ADMINS` kèm role hiện tại (qua `ADMIN_ROLES`→`ROLES`)
-- [ ] `POST /api/v1/admin/admins` (A10) — tạo admin, hash password, gán 1 role qua `ADMIN_ROLES`, check email trùng → 409
-- [ ] `GET /api/v1/admin/admins/{id}` (A10) — chi tiết 1 admin (form sửa)
-- [ ] `PUT /api/v1/admin/admins/{id}` (A10) — sửa admin; `password` optional (chỉ hash lại nếu có gửi)
-- [ ] `PATCH /api/v1/admin/admins/{id}/status` (A10) — khóa/mở tài khoản admin
-- [ ] `GET /api/v1/admin/roles` (A10) — list `ROLES` kèm `PERMISSIONS` (qua `ROLE_PERMISSIONS`), **chỉ đọc**, không cần tạo mới role/permission
-- [ ] `GET /api/v1/admin/dashboard` (A2) — đếm đơn theo `trang_thai`, doanh thu tháng (`PAYMENTS.status=PAID`), số phòng theo `trang_thai`, số refund `REQUESTED`, danh sách refund/booking mới nhất
+- [x] `GET /api/v1/admin/customers` (A9) — list `USERS`, lọc `status`, tìm kiếm `q` (email/tên/sđt), phân trang
+- [x] `PATCH /api/v1/admin/customers/{id}/status` (A9) — khóa/mở tài khoản khách (`ACTIVE`↔`LOCKED`)
+- [x] `GET /api/v1/admin/admins` (A10) — list `ADMINS` kèm role hiện tại (qua `ADMIN_ROLES`→`ROLES`)
+- [x] `POST /api/v1/admin/admins` (A10) — tạo admin, hash password, gán 1 role qua `ADMIN_ROLES`, check email trùng → 409
+- [x] `GET /api/v1/admin/admins/{id}` (A10) — chi tiết 1 admin (form sửa)
+- [x] `PUT /api/v1/admin/admins/{id}` (A10) — sửa admin; `password` optional (chỉ hash lại nếu có gửi)
+- [x] `PATCH /api/v1/admin/admins/{id}/status` (A10) — khóa/mở tài khoản admin
+- [x] `GET /api/v1/admin/roles` (A10) — list `ROLES` kèm `PERMISSIONS` (qua `ROLE_PERMISSIONS`), **chỉ đọc**, không cần tạo mới role/permission
+- [x] `GET /api/v1/admin/dashboard` (A2) — đếm đơn theo `trang_thai`, doanh thu tháng (`PAYMENTS.status=PAID`), số phòng theo `trang_thai`, số refund `REQUESTED`, danh sách refund/booking mới nhất
 
 ## Frontend — checklist trang
 
-- [ ] `app/(admin)/admin/customers/page.tsx`
-- [ ] `app/(admin)/admin/staff/page.tsx`
-- [ ] `app/(admin)/admin/staff/new/page.tsx`
-- [ ] `app/(admin)/admin/staff/[id]/edit/page.tsx`
-- [ ] `app/(admin)/admin/page.tsx` (dashboard)
+- [x] `app/(admin)/admin/customers/page.tsx`
+- [x] `app/(admin)/admin/staff/page.tsx`
+- [x] `app/(admin)/admin/staff/new/page.tsx`
+- [x] `app/(admin)/admin/staff/[id]/edit/page.tsx`
+- [x] `app/(admin)/admin/page.tsx` (dashboard)
 
 ## KHÔNG thuộc Task A (dễ nhầm)
 
@@ -67,9 +67,9 @@ hình), [`documents/openapi.yaml`](documents/openapi.yaml) (mở bằng https://
 
 ## Definition of Done
 
-- [ ] Tất cả 9 endpoint ở checklist trên trả dữ liệu thật từ Postgres (không còn stub)
-- [ ] Test qua Swagger UI: tạo/sửa/khóa 1 admin, khóa/mở 1 khách hàng thành công
-- [ ] Cả 5 trang frontend hiển thị dữ liệu thật, không còn import `mock-data` cho phần liên quan
+- [x] Tất cả 9 endpoint ở checklist trên trả dữ liệu thật từ Postgres (không còn stub)
+- [x] Test qua Swagger UI: tạo/sửa/khóa 1 admin, khóa/mở 1 khách hàng thành công
+- [x] Cả 5 trang frontend hiển thị dữ liệu thật, không còn import `mock-data` cho phần liên quan
 - [ ] Dashboard hiển thị số liệu đúng sau khi Task B/C/D đã có dữ liệu (test lại lần 2 sau khi các
       task khác merge)
 

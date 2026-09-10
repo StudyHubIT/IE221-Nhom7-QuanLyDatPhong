@@ -23,95 +23,126 @@ SEED_PASSWORD = "password123"
 def seed() -> None:
     db = SessionLocal()
     try:
-        if db.query(Admin).first() is not None:
-            print("Seed data already present, skipping.")
-            return
+        # 1. Roles & Permissions
+        role_super_admin = db.query(Role).filter_by(code="SUPER_ADMIN").first()
+        if not role_super_admin:
+            role_super_admin = Role(code="SUPER_ADMIN", name="Super Administrator")
+            db.add(role_super_admin)
 
-        super_admin = Admin(
-            email="admin@hotel.com",
-            password_hash=hash_password(SEED_PASSWORD),
-            full_name="Super Admin",
-            status="ACTIVE",
-        )
-        staff = Admin(
-            email="staff@hotel.com",
-            password_hash=hash_password(SEED_PASSWORD),
-            full_name="Nhân viên",
-            status="ACTIVE",
-        )
-        db.add_all([super_admin, staff])
+        role_staff = db.query(Role).filter_by(code="STAFF").first()
+        if not role_staff:
+            role_staff = Role(code="STAFF", name="Staff")
+            db.add(role_staff)
 
-        role_super_admin = Role(code="SUPER_ADMIN", name="Super Administrator")
-        role_staff = Role(code="STAFF", name="Staff")
-        db.add_all([role_super_admin, role_staff])
+        permissions_data = [
+            ("MANAGE_ROOM", "Quản lý phòng"),
+            ("MANAGE_BOOKING", "Quản lý đặt phòng"),
+            ("MANAGE_PAYMENT", "Quản lý thanh toán"),
+            ("APPROVE_REFUND", "Duyệt hoàn tiền"),
+        ]
+        perms_dict = {}
+        for code, desc in permissions_data:
+            p = db.query(Permission).filter_by(code=code).first()
+            if not p:
+                p = Permission(code=code, description=desc)
+                db.add(p)
+            perms_dict[code] = p
 
-        perm_room = Permission(code="MANAGE_ROOM", description="Quản lý phòng")
-        perm_booking = Permission(code="MANAGE_BOOKING", description="Quản lý đặt phòng")
-        perm_payment = Permission(code="MANAGE_PAYMENT", description="Quản lý thanh toán")
-        perm_refund = Permission(code="APPROVE_REFUND", description="Duyệt hoàn tiền")
-        db.add_all([perm_room, perm_booking, perm_payment, perm_refund])
+        db.flush()
 
-        user1 = User(
-            email="user1@gmail.com",
-            phone="0900000001",
-            password_hash=hash_password(SEED_PASSWORD),
-            full_name="Nguyễn Văn A",
-            status="ACTIVE",
-        )
-        user2 = User(
-            email="user2@gmail.com",
-            phone="0900000002",
-            password_hash=hash_password(SEED_PASSWORD),
-            full_name="Trần Thị B",
-            status="ACTIVE",
-        )
-        db.add_all([user1, user2])
+        # Link role permissions
+        if not role_super_admin.permissions:
+            role_super_admin.permissions = list(perms_dict.values())
+        if not role_staff.permissions:
+            role_staff.permissions = [perms_dict["MANAGE_ROOM"], perms_dict["MANAGE_BOOKING"]]
 
-        loai_don = RoomType(ten_loai="Phòng Đơn", gia_co_ban=500_000)
-        loai_doi = RoomType(ten_loai="Phòng Đôi", gia_co_ban=800_000)
-        loai_vip = RoomType(ten_loai="Phòng VIP", gia_co_ban=1_500_000)
-        db.add_all([loai_don, loai_doi, loai_vip])
+        # 2. Admins
+        admins_data = [
+            ("admin@hotel.com", "Super Admin Tổng", "ACTIVE", role_super_admin),
+            ("staff@hotel.com", "Nhân viên Lễ tân", "ACTIVE", role_staff),
+            ("nguyenvana_admin@hotel.com", "Nguyễn Văn An (Staff)", "ACTIVE", role_staff),
+            ("lethic_admin@hotel.com", "Lê Thị Cúc (Staff - Đã khóa)", "LOCKED", role_staff),
+            ("tranvand_admin@hotel.com", "Trần Văn Dũng (Admin)", "ACTIVE", role_super_admin),
+        ]
+        for email, full_name, status, role in admins_data:
+            admin = db.query(Admin).filter_by(email=email).first()
+            if not admin:
+                admin = Admin(
+                    email=email,
+                    password_hash=hash_password(SEED_PASSWORD),
+                    full_name=full_name,
+                    status=status,
+                )
+                admin.roles.append(role)
+                db.add(admin)
 
-        db.flush()  # assign ids before wiring association tables / FKs
+        # 3. Users / Customers
+        users_data = [
+            ("user1@gmail.com", "0900000001", "Nguyễn Văn A", "ACTIVE"),
+            ("user2@gmail.com", "0900000002", "Trần Thị B", "ACTIVE"),
+            ("khachhang.locked@gmail.com", "0912345678", "Phạm Văn Khóa (Tài khoản bị khóa)", "LOCKED"),
+            ("lehoangnam@gmail.com", "0987654321", "Lê Hoàng Nam", "ACTIVE"),
+            ("dangthimai@gmail.com", "0933112233", "Đặng Thị Mai", "ACTIVE"),
+            ("vutrongphung@gmail.com", "0944556677", "Vũ Trọng Phụng", "ACTIVE"),
+            ("nguyenhoaian@gmail.com", "0977889900", "Nguyễn Hoài An", "ACTIVE"),
+            ("hoangthao.locked@gmail.com", "0966554433", "Hoàng Thị Thảo (Khóa)", "LOCKED"),
+            ("buituankiet@gmail.com", "0922334455", "Bùi Tuấn Kiệt", "ACTIVE"),
+            ("phananhthu@gmail.com", "0911223344", "Phan Anh Thư", "ACTIVE"),
+            ("doanducmanh@gmail.com", "0988776655", "Đoàn Đức Mạnh", "ACTIVE"),
+            ("nguyenquynhtrang@gmail.com", "0955443322", "Nguyễn Quỳnh Trang", "ACTIVE"),
+        ]
+        for email, phone, full_name, status in users_data:
+            user = db.query(User).filter_by(email=email).first()
+            if not user:
+                user = User(
+                    email=email,
+                    phone=phone,
+                    password_hash=hash_password(SEED_PASSWORD),
+                    full_name=full_name,
+                    status=status,
+                )
+                db.add(user)
 
-        db.execute(
-            admin_roles.insert(),
-            [
-                {"admin_id": super_admin.id, "role_id": role_super_admin.id},
-                {"admin_id": staff.id, "role_id": role_staff.id},
-            ],
-        )
-        db.execute(
-            role_permissions.insert(),
-            [
-                {"role_id": role_super_admin.id, "permission_id": perm_room.id},
-                {"role_id": role_super_admin.id, "permission_id": perm_booking.id},
-                {"role_id": role_super_admin.id, "permission_id": perm_payment.id},
-                {"role_id": role_super_admin.id, "permission_id": perm_refund.id},
-                {"role_id": role_staff.id, "permission_id": perm_room.id},
-                {"role_id": role_staff.id, "permission_id": perm_booking.id},
-            ],
-        )
+        # 4. Room Types & Rooms
+        room_types_data = [
+            (1, "Phòng Đơn Standard", 500_000),
+            (2, "Phòng Đôi Superior", 850_000),
+            (3, "Phòng VIP Suite", 1_600_000),
+            (4, "Phòng Deluxe Hướng Biển", 2_200_000),
+        ]
+        for r_id, ten_loai, gia in room_types_data:
+            rt = db.query(RoomType).filter_by(id=r_id).first()
+            if not rt:
+                rt = RoomType(id=r_id, ten_loai=ten_loai, gia_co_ban=gia)
+                db.add(rt)
 
-        db.add_all(
-            [
-                Room(so_phong="101", loai_phong_id=loai_don.id, trang_thai="AVAILABLE"),
-                Room(so_phong="102", loai_phong_id=loai_don.id, trang_thai="AVAILABLE"),
-                Room(so_phong="201", loai_phong_id=loai_doi.id, trang_thai="AVAILABLE"),
-                Room(so_phong="202", loai_phong_id=loai_doi.id, trang_thai="AVAILABLE"),
-                Room(so_phong="VIP01", loai_phong_id=loai_vip.id, trang_thai="AVAILABLE"),
-            ]
-        )
+        db.flush()
+
+        rooms_data = [
+            ("101", 1, "AVAILABLE"),
+            ("102", 1, "AVAILABLE"),
+            ("103", 1, "MAINTENANCE"),
+            ("201", 2, "AVAILABLE"),
+            ("202", 2, "AVAILABLE"),
+            ("203", 2, "OCCUPIED"),
+            ("301", 3, "AVAILABLE"),
+            ("VIP01", 3, "AVAILABLE"),
+            ("DLX01", 4, "AVAILABLE"),
+            ("DLX02", 4, "MAINTENANCE"),
+        ]
+        for so_phong, loai_id, trang_thai in rooms_data:
+            r = db.query(Room).filter_by(so_phong=so_phong).first()
+            if not r:
+                r = Room(so_phong=so_phong, loai_phong_id=loai_id, trang_thai=trang_thai)
+                db.add(r)
 
         db.commit()
-        print("Seed data created.")
-        print(f"  Admin:  admin@hotel.com / {SEED_PASSWORD}")
-        print(f"  Staff:  staff@hotel.com / {SEED_PASSWORD}")
-        print(f"  User:   user1@gmail.com / {SEED_PASSWORD}")
-        print(f"  User:   user2@gmail.com / {SEED_PASSWORD}")
+        print("Seed dev data completed successfully!")
+        print(f"  Default password for all accounts: {SEED_PASSWORD}")
     finally:
         db.close()
 
 
 if __name__ == "__main__":
     seed()
+
