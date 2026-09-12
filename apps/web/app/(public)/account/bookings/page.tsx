@@ -57,7 +57,7 @@ const tabs: { value: "all" | BookingStatus; label: string }[] = [
 ];
 
 export default function MyBookingsPage() {
-  const { session } = useUserSession();
+  const { session, isHydrated } = useUserSession();
   const [status, setStatus] = useState<(typeof tabs)[number]["value"]>("all");
   const [data, setData] = useState<PaginatedBookings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,6 +96,15 @@ export default function MyBookingsPage() {
     ).length || 0;
   const completedCount =
     data?.items.filter((b) => b.trang_thai === "CHECKED_OUT").length || 0;
+
+  if (!isHydrated) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-6 py-16 text-center text-muted-foreground animate-pulse flex flex-col items-center gap-3">
+        <div className="size-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <span className="text-sm font-semibold">Đang tải lịch sử lưu trú của bạn...</span>
+      </main>
+    );
+  }
 
   // Nếu người dùng chưa đăng nhập -> Hiển thị Auth Guard Prompt sang trọng
   if (!session) {

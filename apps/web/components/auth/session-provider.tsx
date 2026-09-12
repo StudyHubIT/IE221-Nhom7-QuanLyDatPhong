@@ -3,8 +3,8 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
-  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -36,17 +36,15 @@ type AdminAuthContextValue = {
 
 const UserAuthContext = createContext<UserAuthContextValue | null>(null);
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
-const subscribeToHydration = () => () => {};
-const getHydratedSnapshot = () => true;
-const getServerHydrationSnapshot = () => false;
 
 export function UserSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<UserSession | null>(readUserSession);
-  const isHydrated = useSyncExternalStore(
-    subscribeToHydration,
-    getHydratedSnapshot,
-    getServerHydrationSnapshot,
-  );
+  const [session, setSession] = useState<UserSession | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setSession(readUserSession());
+    setIsHydrated(true);
+  }, []);
 
   function login(next: UserSession) {
     writeUserSession(next);
@@ -58,8 +56,6 @@ export function UserSessionProvider({ children }: { children: ReactNode }) {
     clearUserSession();
     setSession(null);
     if (token) {
-      // Token is stateless server-side, nothing to actually revoke — this
-      // call is best-effort only, failures are ignored.
       apiFetch("/api/v1/auth/logout", { method: "POST", token }).catch(
         () => {},
       );
@@ -84,12 +80,13 @@ export function useUserSession() {
 }
 
 export function AdminSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AdminSession | null>(readAdminSession);
-  const isHydrated = useSyncExternalStore(
-    subscribeToHydration,
-    getHydratedSnapshot,
-    getServerHydrationSnapshot,
-  );
+  const [session, setSession] = useState<AdminSession | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setSession(readAdminSession());
+    setIsHydrated(true);
+  }, []);
 
   function login(next: AdminSession) {
     writeAdminSession(next);

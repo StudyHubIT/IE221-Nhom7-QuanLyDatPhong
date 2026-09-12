@@ -21,33 +21,33 @@ hình), [`documents/openapi.yaml`](documents/openapi.yaml) (mở bằng https://
 
 **Bảng**: `DATPHONG`, `CT_DATPHONG`, `PAYMENTS` (đọc thêm `PHONG`)
 
-## Backend — checklist endpoint (trong `bookings.py`, **trừ** `cancel_my_booking` — xem ghi chú)
+## Backend — checklist endpoint (trong `bookings.py`, `admin_bookings.py`, `admin_payments.py`)
 
-- [ ] `GET /api/v1/bookings` (P8) — đơn của tôi, lọc `status`, phân trang
-- [ ] `POST /api/v1/bookings` (P6) — **quan trọng nhất**: 1 transaction tạo `DATPHONG` + nhiều
+- [x] `GET /api/v1/bookings` (P8) — đơn của tôi, lọc `status`, phân trang
+- [x] `POST /api/v1/bookings` (P6) — **quan trọng nhất**: 1 transaction tạo `DATPHONG` + nhiều
       `CT_DATPHONG` + `PAYMENTS(status=PAID)`, set `trang_thai=CONFIRMED`; kiểm tra lại phòng còn
       trống *trong* transaction, trả 409 nếu bị đặt mất (race condition)
-- [ ] `GET /api/v1/bookings/{id}` (P7, P9) — chi tiết đơn của tôi (kèm `rooms`, `payment`, `refund`
+- [x] `GET /api/v1/bookings/{id}` (P7, P9) — chi tiết đơn của tôi (kèm `rooms`, `payment`, `refund`
       nếu có — `refund` là dữ liệu do Task D tạo, Task C chỉ cần đọc và trả về đúng field)
-- [ ] `GET /api/v1/admin/bookings` (A5) — list + lọc `status`/`from`/`to`/`user_id`/`q` + phân
+- [x] `GET /api/v1/admin/bookings` (A5) — list + lọc `status`/`from`/`to`/`user_id`/`q` + phân
       trang (param `user_id` này chính là cái Task A dùng để link từ A9 sang)
-- [ ] `GET /api/v1/admin/bookings/{id}` (A6) — chi tiết đơn (admin)
-- [ ] `PATCH /api/v1/admin/bookings/{id}/status` (A6) — chuyển
+- [x] `GET /api/v1/admin/bookings/{id}` (A6) — chi tiết đơn (admin)
+- [x] `PATCH /api/v1/admin/bookings/{id}/status` (A6) — chuyển
       `PENDING→CONFIRMED→CHECKED_IN→CHECKED_OUT`, chặn 400 nếu nhảy ngược/nhảy cách
-- [ ] `GET /api/v1/admin/payments` (A7) — list + lọc `status`/`method` + phân trang (gộp vào task
+- [x] `GET /api/v1/admin/payments` (A7) — list + lọc `status`/`method` + phân trang (gộp vào task
       này vì `PAYMENTS` chỉ được tạo ra từ `checkout`, cùng một mạch dữ liệu với booking)
 
 ## Frontend — checklist trang
 
-- [ ] `app/(public)/cart/page.tsx` (P4)
-- [ ] `app/(public)/checkout/page.tsx` (P6)
-- [ ] `app/(public)/checkout/success/page.tsx` (P7)
-- [ ] `app/(public)/account/bookings/page.tsx` (P8)
-- [ ] `app/(public)/account/bookings/[id]/page.tsx` (P9) — **chỉ phần hiển thị thông tin đơn**;
+- [x] `app/(public)/cart/page.tsx` (P4)
+- [x] `app/(public)/checkout/page.tsx` (P6)
+- [x] `app/(public)/checkout/success/page.tsx` (P7)
+- [x] `app/(public)/account/bookings/page.tsx` (P8)
+- [x] `app/(public)/account/bookings/[id]/page.tsx` (P9) — **chỉ phần hiển thị thông tin đơn**;
       nút "Hủy đặt phòng" trên cùng trang này thuộc Task D, xem ghi chú bên dưới
-- [ ] `app/(admin)/admin/bookings/page.tsx` (A5)
-- [ ] `app/(admin)/admin/bookings/[id]/page.tsx` (A6)
-- [ ] `app/(admin)/admin/payments/page.tsx` (A7)
+- [x] `app/(admin)/admin/bookings/page.tsx` (A5)
+- [x] `app/(admin)/admin/bookings/[id]/page.tsx` (A6)
+- [x] `app/(admin)/admin/payments/page.tsx` (A7)
 
 ## KHÔNG thuộc Task C (dễ nhầm)
 
@@ -68,11 +68,11 @@ hình), [`documents/openapi.yaml`](documents/openapi.yaml) (mở bằng https://
 
 ## Definition of Done
 
-- [ ] 7 endpoint ở checklist trả dữ liệu thật
-- [ ] Test 2 request `checkout` cùng lúc cho cùng 1 phòng → 1 thành công, 1 nhận 409 (test thủ
+- [x] 7 endpoint ở checklist trả dữ liệu thật
+- [x] Test 2 request `checkout` cùng lúc cho cùng 1 phòng → 1 thành công, 1 nhận 409 (test thủ
       công hoặc viết test tự động, không chỉ tin vào code review)
-- [ ] Test chuyển trạng thái đơn admin theo đúng thứ tự, thử nhảy ngược → nhận 400
-- [ ] 8 trang frontend hiển thị dữ liệu thật
+- [x] Test chuyển trạng thái đơn admin theo đúng thứ tự, thử nhảy ngược → nhận 400
+- [x] 8 trang frontend hiển thị dữ liệu thật
 
 ## Quy trình tự kiểm trước khi mở PR
 

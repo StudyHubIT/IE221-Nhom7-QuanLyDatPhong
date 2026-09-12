@@ -16,6 +16,7 @@ user_scheme = HTTPBearer(
     bearerFormat="JWT",
     scheme_name="UserBearer",
 )
+
 admin_scheme = HTTPBearer(
     auto_error=False,
     bearerFormat="JWT",
@@ -56,11 +57,10 @@ def _admin_role(admin: AdminModel) -> AdminRole:
 
 
 def get_current_user(
-    credentials: Annotated[
-        HTTPAuthorizationCredentials | None, Depends(user_scheme)
-    ],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(user_scheme)],
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
+
     token = _require_token(credentials)
     try:
         subject_type, subject_id = decode_access_token(token)
