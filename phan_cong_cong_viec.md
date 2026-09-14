@@ -10,7 +10,9 @@ Tham khảo bắt buộc trước khi code: [`documents/screens.md`](documents/s
 hình), [`documents/openapi.yaml`](documents/openapi.yaml) (mở bằng https://editor.swagger.io),
 [`documents/sql/erd.md`](documents/sql/erd.md).
 
-> **Task 0 (nền tảng DB & Auth) đã xong** — chi tiết ở [`documents/phan-cong-api.md`](documents/phan-cong-api.md).
+> **Task 0 (nền tảng DB & Auth) đã xong** — checklist Long:
+> [`phan_cong_long.md`](phan_cong_long.md). Lịch sử Task 0:
+> [`documents/phan-cong-api.md`](documents/phan-cong-api.md).
 > **Login đã hoạt động thật ở cả 2 phía** (`/login`, `/admin/login`, header/sidebar hiển thị đúng
 > phiên đăng nhập, có đăng xuất, có chặn truy cập `/account/*` và `/admin/*` khi chưa đăng nhập).
 > 4 task dưới đây **không cần đụng lại** `auth.py`, phần `AdminAuth` trong `admin.py`, hay 2 trang
@@ -28,6 +30,7 @@ hiện **đúng một lần** trong 4 task (trừ các endpoint đã xong ở Ta
 
 | Thành viên | Task | File chi tiết |
 |---|---|---|
+| Long | 0 — Nền tảng DB & Auth (scaffold API) | [`phan_cong_long.md`](phan_cong_long.md) |
 | Tịnh | A — Khách hàng, Tài khoản admin & Dashboard | [`phan_cong_tinh.md`](phan_cong_tinh.md) |
 | Hoàng | B — Loại phòng & Phòng | [`phan_cong_hoang.md`](phan_cong_hoang.md) |
 | Vũ | C — Đặt phòng & Thanh toán | [`phan_cong_vu.md`](phan_cong_vu.md) |
@@ -37,13 +40,13 @@ hiện **đúng một lần** trong 4 task (trừ các endpoint đã xong ở Ta
 
 | Method | Endpoint | Task |
 |---|---|---|
-| POST | `/api/v1/auth/register` | ✅ DONE (Task 0) |
-| POST | `/api/v1/auth/login` | ✅ DONE (Task 0) |
-| POST | `/api/v1/auth/logout` | ✅ DONE (Task 0) |
-| GET | `/api/v1/auth/me` | ✅ DONE (Task 0) |
-| POST | `/api/v1/admin/auth/login` | ✅ DONE (Task 0) |
-| POST | `/api/v1/admin/auth/logout` | ✅ DONE (Task 0) |
-| GET | `/api/v1/admin/auth/me` | ✅ DONE (Task 0) |
+| POST | `/api/v1/auth/register` | ✅ DONE (**0** — [Long](phan_cong_long.md)) |
+| POST | `/api/v1/auth/login` | ✅ DONE (**0** — [Long](phan_cong_long.md)) |
+| POST | `/api/v1/auth/logout` | ✅ DONE (**0** — [Long](phan_cong_long.md)) |
+| GET | `/api/v1/auth/me` | ✅ DONE (**0** — [Long](phan_cong_long.md)) |
+| POST | `/api/v1/admin/auth/login` | ✅ DONE (**0** — [Long](phan_cong_long.md)) |
+| POST | `/api/v1/admin/auth/logout` | ✅ DONE (**0** — [Long](phan_cong_long.md)) |
+| GET | `/api/v1/admin/auth/me` | ✅ DONE (**0** — [Long](phan_cong_long.md)) |
 | GET | `/api/v1/room-types` | **B** — [Hoàng](phan_cong_hoang.md) |
 | GET | `/api/v1/room-types/{id}` | **B** — [Hoàng](phan_cong_hoang.md) |
 | GET | `/api/v1/rooms/availability` | **B** — [Hoàng](phan_cong_hoang.md) |
