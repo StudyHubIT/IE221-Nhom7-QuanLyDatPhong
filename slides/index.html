@@ -453,7 +453,7 @@
               <li>Schema + seed + đăng ký/đăng nhập khách &amp; admin</li>
               <li>Tìm loại phòng / phòng trống theo ngày</li>
               <li>Giỏ → checkout: tạo đơn + chi tiết + thanh toán giả lập (<span class="mono">PAID</span>)</li>
-              <li>Lịch sử đơn; khách tự hủy → yêu cầu hoàn tiền</li>
+              <li>Lịch sử đơn, khách tự hủy → yêu cầu hoàn tiền</li>
             </ul>
           </article>
           <article class="card">
@@ -461,7 +461,7 @@
             <ul>
               <li>Dashboard KPI</li>
               <li>CRUD loại phòng &amp; phòng</li>
-              <li>Quản lý đơn, thanh toán; duyệt / từ chối hoàn tiền</li>
+              <li>Quản lý đơn, thanh toán, duyệt / từ chối hoàn tiền</li>
               <li>Khách hàng (khóa tài khoản) &amp; tài khoản staff</li>
             </ul>
           </article>
@@ -486,7 +486,7 @@
             <tr><td>Poetry</td><td>Quản lý dependency &amp; virtualenv (<span class="mono">pyproject.toml</span> / lock).</td></tr>
             <tr><td>Pydantic v2</td><td>Validate body/query, serialize JSON, khớp contract OpenAPI.</td></tr>
             <tr><td>pydantic-settings</td><td>Đọc <span class="mono">.env</span>: CORS, <span class="mono">DATABASE_URL</span>.</td></tr>
-            <tr><td>SQLAlchemy 2</td><td>ORM: model = bảng; session theo từng request.</td></tr>
+            <tr><td>SQLAlchemy 2</td><td>ORM: model = bảng, session theo từng request.</td></tr>
             <tr><td>Alembic</td><td>Migration schema (pages → 12 bảng khách sạn). Container chạy <span class="mono">upgrade head</span>.</td></tr>
             <tr><td>psycopg</td><td>Driver PostgreSQL.</td></tr>
             <tr><td>pytest + httpx</td><td>Test API (<span class="mono">backend/tests</span>).</td></tr>
@@ -506,7 +506,7 @@
           </article>
           <article class="card">
             <h3 class="skill-name">wire-frontend-page</h3>
-            <p>Nối 1 trang <span class="mono">apps/web</span> từ <span class="mono">mock-data</span> sang <span class="mono">apiFetch</span>. Giữ nguyên UI; chỉ nối khi backend đã hết stub.</p>
+            <p>Nối 1 trang <span class="mono">apps/web</span> từ <span class="mono">mock-data</span> sang <span class="mono">apiFetch</span>. Giữ nguyên UI, chỉ nối khi backend đã hết stub.</p>
           </article>
           <article class="card">
             <h3 class="skill-name">task-scope-check</h3>
@@ -517,7 +517,7 @@
             <p>Reset stack dev (Postgres + API + Next.js) khi DB lệch state. Hỏi xác nhận trước khi <span class="mono">docker compose down</span>, rồi seed lại.</p>
           </article>
         </div>
-        <p class="notes">Không đọc hết 4 card. Nêu một vòng: hiện thực API → nối trang → check phạm vi; seed-reset khi môi trường hỏng. Skill là hướng dẫn cho agent, không phải thư viện runtime.</p>
+        <p class="notes">Không đọc hết 4 card. Nêu một vòng: hiện thực API → nối trang → check phạm vi, seed-reset khi môi trường hỏng. Skill là hướng dẫn cho agent, không phải thư viện runtime.</p>
       </section>
 
       <section class="slide top" data-title="Demo tài khoản">
