@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IE221 · Nhóm 7 — Quản lý Đặt phòng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --text: #f6f3ec;
+      --muted: #9aa6bb;
+      --gold: #d4b15a;
+      --gold-dim: #8a7030;
+      --line: #243049;
+      --ok: #7dcea0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Be Vietnam Pro", system-ui, sans-serif;
+    }
+
+    body { overflow: hidden; }
+
+    .deck {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+
+    .slides { position: relative; height: 100%; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      padding: 6.5vh 7.5vw 8vh;
+      background:
+        radial-gradient(1200px 500px at 100% -10%, #1b2740 0%, transparent 55%),
+        var(--bg);
+    }
+
+    .slide.active { display: flex; flex-direction: column; justify-content: center; }
+    .slide.top { justify-content: flex-start; }
+
+    .kicker {
+      font-size: 0.88rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 600;
+      margin-bottom: 0.9rem;
+    }
+
+    h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-weight: 500;
+      font-size: clamp(2.1rem, 4.8vw, 3.8rem);
+      line-height: 1.12;
+      max-width: 20ch;
+    }
+
+    h2 {
+      font-family: Fraunces, Georgia, serif;
+      font-weight: 500;
+      font-size: clamp(1.7rem, 3.1vw, 2.55rem);
+      line-height: 1.2;
+      margin-bottom: 1.35rem;
+    }
+
+    .lede {
+      margin-top: 1.1rem;
+      font-size: clamp(1rem, 1.5vw, 1.25rem);
+      color: var(--muted);
+      max-width: 46ch;
+      line-height: 1.5;
+    }
+
+    ul { list-style: none; }
+
+    .bullets li {
+      font-size: clamp(1.08rem, 1.65vw, 1.4rem);
+      line-height: 1.45;
+      padding: 0.42rem 0 0.42rem 1.35rem;
+      position: relative;
+      max-width: 52ch;
+    }
+
+    .bullets li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.95rem;
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 99px;
+      background: var(--gold);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.6rem 2.4rem;
+      align-items: start;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem 1.25rem;
+    }
+
+    .card h3 {
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.7rem;
+    }
+
+    .card h3.skill-name {
+      text-transform: none;
+      letter-spacing: 0.02em;
+      font-size: 0.95rem;
+      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    }
+
+    .card p, .card li {
+      color: var(--text);
+      font-size: 1.02rem;
+      line-height: 1.45;
+    }
+
+    .card li { padding: 0.22rem 0; }
+
+    .mono {
+      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      font-size: 0.92em;
+    }
+
+    table.team {
+      width: min(720px, 100%);
+      border-collapse: collapse;
+      margin-top: 1.8rem;
+      font-size: 1.12rem;
+    }
+
+    table.team th, table.team td {
+      text-align: left;
+      padding: 0.72rem 0.4rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    table.team th {
+      color: var(--gold);
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    table.team .id {
+      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    table.libs {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.02rem;
+    }
+
+    table.libs th, table.libs td {
+      text-align: left;
+      vertical-align: top;
+      padding: 0.62rem 0.55rem 0.62rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    table.libs th {
+      color: var(--gold);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    table.libs td:first-child {
+      font-weight: 600;
+      white-space: nowrap;
+      padding-right: 1.4rem;
+      color: var(--gold);
+    }
+
+    .tree {
+      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--muted);
+      white-space: pre;
+    }
+
+    .tree b { color: var(--text); font-weight: 500; }
+
+    .stack {
+      display: flex;
+      align-items: stretch;
+      gap: 0.55rem;
+    }
+
+    .stack .box {
+      flex: 1;
+      text-align: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.95rem 0.5rem;
+    }
+
+    .stack .box strong { display: block; font-size: 1.05rem; }
+    .stack .box span { display: block; margin-top: 0.28rem; color: var(--muted); font-size: 0.86rem; }
+    .stack .arrow { color: var(--gold); align-self: center; font-size: 1.25rem; }
+
+    .erd-slide h2 { margin-bottom: 0.55rem; }
+
+    .erd-figure {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+
+    .erd-figure img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .arch-slide h2 { margin-bottom: 0.45rem; }
+
+    .arch-figure {
+      flex: 0 0 auto;
+      margin: 0 0 0.75rem;
+    }
+
+    .arch-figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 26vh;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .arch-slide table.libs {
+      font-size: 0.9rem;
+    }
+
+    .arch-slide table.libs th,
+    .arch-slide table.libs td {
+      padding: 0.34rem 0.5rem 0.34rem 0;
+    }
+
+    .video-slot {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      background: #080d18;
+      overflow: hidden;
+    }
+
+    .video-slot video {
+      display: none;
+      width: 100%;
+      height: 100%;
+      max-height: 64vh;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .video-slot.has-video {
+      border-style: solid;
+      background: #000;
+    }
+
+    .video-slot.has-video video { display: block; }
+    .video-slot.has-video .video-placeholder { display: none; }
+
+    .video-placeholder {
+      text-align: center;
+      color: var(--muted);
+      padding: 2rem;
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .video-placeholder code {
+      display: inline-block;
+      margin-top: 0.35rem;
+      color: var(--gold);
+      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      font-size: 0.92em;
+    }
+
+    .thanks {
+      text-align: center;
+      align-items: center;
+    }
+
+    .thanks h1 { max-width: none; }
+
+    .footer {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 1.2rem 0.7rem;
+      border-top: 1px solid var(--line);
+      background: #080d18;
+      font-size: 0.82rem;
+      color: var(--muted);
+      z-index: 2;
+    }
+
+    .progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: var(--gold);
+      width: 0;
+    }
+
+    .hint kbd {
+      font-family: inherit;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0.05rem 0.35rem;
+      color: var(--text);
+    }
+
+    .notes {
+      display: none;
+      margin-top: 1.2rem;
+      padding: 0.8rem 1rem;
+      border-left: 3px solid var(--gold-dim);
+      color: var(--muted);
+      font-size: 0.92rem;
+      max-width: 72ch;
+      line-height: 1.5;
+    }
+
+    body.show-notes .notes { display: block; }
+
+    @media (max-width: 960px) {
+      .grid-2, .grid-3, .stack { grid-template-columns: 1fr; flex-direction: column; }
+      .stack .arrow { transform: rotate(90deg); }
+    }
+
+    @media print {
+      body { overflow: visible; background: #fff; color: #111; }
+      .footer { display: none; }
+      .slide {
+        position: relative;
+        display: flex !important;
+        page-break-after: always;
+        min-height: 100vh;
+        background: #fff;
+        color: #111;
+      }
+      .notes { display: none !important; }
+      .card, .stack .box { background: #f6f6f6; border-color: #ddd; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <div class="slides">
+
+      <section class="slide active" data-title="Đề tài">
+        <p class="kicker">IE221 · Kỹ thuật lập trình Python · Nhóm 7</p>
+        <h1>Hệ thống Quản lý Đặt phòng</h1>
+        <p class="lede">Web đặt phòng khách sạn: phía khách và CMS quản trị, API Python nối PostgreSQL.</p>
+        <table class="team">
+          <thead>
+            <tr><th>Họ và tên</th><th>MSSV</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Lê Tiến Hoàng</td><td class="id">25410217</td></tr>
+            <tr><td>La Anh Vũ</td><td class="id">25410337</td></tr>
+            <tr><td>Lê Ngọc Hiệp</td><td class="id">25410209</td></tr>
+            <tr><td>Đào Duy Tịnh</td><td class="id">25410318</td></tr>
+            <tr><td>Lê Kim Long</td><td class="id">25410247</td></tr>
+          </tbody>
+        </table>
+        <p class="notes">Không đọc hết bảng — chỉ nêu đề tài rồi sang nội dung.</p>
+      </section>
+
+      <section class="slide" data-title="Nội dung">
+        <p class="kicker">Nội dung trình bày</p>
+        <h2>Thứ tự các phần</h2>
+        <ul class="bullets">
+          <li>Mô hình dữ liệu (ERD)</li>
+          <li>Phạm vi đã hiện thực</li>
+          <li>Kiến trúc</li>
+          <li>Bốn skill Claude Code</li>
+          <li>Demo: tài khoản &amp; dashboard</li>
+          <li>Demo: loại phòng &amp; phòng</li>
+          <li>Demo: đặt phòng, thanh toán, hủy &amp; hoàn tiền</li>
+        </ul>
+      </section>
+
+      <section class="slide top erd-slide" data-title="ERD">
+        <p class="kicker">Mô hình dữ liệu</p>
+        <figure class="erd-figure">
+          <img src="images/erd.png" alt="ERD hệ thống quản lý đặt phòng: User &amp; Auth, Phòng &amp; đặt, Thanh toán" />
+        </figure>
+        <p class="notes">Chỉ chiếu sơ đồ. Nhấn 3 nhóm (auth / phòng-đặt / tiền) rồi luồng USERS → DATPHONG → CT_DATPHONG → PHONG, rồi PAYMENTS → REFUNDS. Không đọc từng cột. Nếu GV hỏi chi tiết, nói USERS/ADMINS không kế thừa nhau.</p>
+      </section>
+
+      <section class="slide" data-title="Phạm vi">
+        <p class="kicker">Đã làm xong</p>
+        <h2>End-to-end trên dữ liệu Postgres, không còn mock API</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Nền tảng &amp; khách</h3>
+            <ul>
+              <li>Schema + seed + đăng ký/đăng nhập khách &amp; admin</li>
+              <li>Tìm loại phòng / phòng trống theo ngày</li>
+              <li>Giỏ → checkout: tạo đơn + chi tiết + thanh toán giả lập (<span class="mono">PAID</span>)</li>
+              <li>Lịch sử đơn, khách tự hủy → yêu cầu hoàn tiền</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>CMS admin</h3>
+            <ul>
+              <li>Dashboard KPI</li>
+              <li>CRUD loại phòng &amp; phòng</li>
+              <li>Quản lý đơn, thanh toán, duyệt / từ chối hoàn tiền</li>
+              <li>Khách hàng (khóa tài khoản) &amp; tài khoản staff</li>
+            </ul>
+          </article>
+        </div>
+        <p class="lede">Ngoài phạm vi: cổng thanh toán thật (VNPay/Momo), JWT ký số production, tách UI theo từng quyền chi tiết.</p>
+        <p class="notes">Đây là scope đã ship. Hai quyết định nghiệp vụ: thanh toán giả lập, hủy tự phục vụ.</p>
+      </section>
+
+      <section class="slide top arch-slide" data-title="Kiến trúc">
+        <h2>Kiến trúc</h2>
+        <figure class="arch-figure">
+          <img src="images/docker.jpg" alt="Docker Compose: web Next.js :3001 → api FastAPI :8001 → db PostgreSQL 16 :5432" />
+        </figure>
+        <table class="libs">
+          <thead>
+            <tr><th>Thư viện</th><th>Mục đích trong đồ án</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>FastAPI</td><td>Framework HTTP: router, Depends, CORS. Tự sinh OpenAPI.</td></tr>
+            <tr><td>Swagger UI</td><td><span class="mono">/docs</span> — thử endpoint, Authorize bằng token login.</td></tr>
+            <tr><td>Uvicorn</td><td>ASGI server chạy app, reload trong Docker.</td></tr>
+            <tr><td>Poetry</td><td>Quản lý dependency &amp; virtualenv (<span class="mono">pyproject.toml</span> / lock).</td></tr>
+            <tr><td>Pydantic v2</td><td>Validate body/query, serialize JSON, khớp contract OpenAPI.</td></tr>
+            <tr><td>pydantic-settings</td><td>Đọc <span class="mono">.env</span>: CORS, <span class="mono">DATABASE_URL</span>.</td></tr>
+            <tr><td>SQLAlchemy 2</td><td>ORM: model = bảng, session theo từng request.</td></tr>
+            <tr><td>Alembic</td><td>Migration schema (pages → 12 bảng khách sạn). Container chạy <span class="mono">upgrade head</span>.</td></tr>
+            <tr><td>psycopg</td><td>Driver PostgreSQL.</td></tr>
+            <tr><td>pytest + httpx</td><td>Test API (<span class="mono">backend/tests</span>).</td></tr>
+          </tbody>
+        </table>
+        <p class="notes">Sơ đồ 3 container trước. Thư viện: nhấn FastAPI + Pydantic + SQLAlchemy/Alembic. Swagger để GV thấy API. Poetry = cách cài, không phải runtime request.</p>
+      </section>
+
+      <section class="slide top" data-title="Skills">
+        <p class="kicker">Claude Code</p>
+        <h2>Bốn skill gắn với luồng làm việc của nhóm</h2>
+        <p class="lede" style="margin:0 0 1.2rem;max-width:52ch">Nằm ở <span class="mono">.claude/skills/</span>. Mô tả việc bằng lời — agent tự nhận skill và làm đúng convention repo.</p>
+        <div class="grid-2">
+          <article class="card">
+            <h3 class="skill-name">add-feature-endpoint</h3>
+            <p>Hiện thực 1 endpoint FastAPI: model → schema → router. Thay stub bằng query SQLAlchemy, không bịa field ngoài OpenAPI.</p>
+          </article>
+          <article class="card">
+            <h3 class="skill-name">wire-frontend-page</h3>
+            <p>Nối 1 trang <span class="mono">apps/web</span> từ <span class="mono">mock-data</span> sang <span class="mono">apiFetch</span>. Giữ nguyên UI, chỉ nối khi backend đã hết stub.</p>
+          </article>
+          <article class="card">
+            <h3 class="skill-name">task-scope-check</h3>
+            <p>Audit task A/B/C/D: endpoint nào còn stub, trang nào chưa nối API, có lỡ đụng phạm vi người khác không. Chỉ đọc, không sửa code.</p>
+          </article>
+          <article class="card">
+            <h3 class="skill-name">seed-reset</h3>
+            <p>Reset stack dev (Postgres + API + Next.js) khi DB lệch state. Hỏi xác nhận trước khi <span class="mono">docker compose down</span>, rồi seed lại.</p>
+          </article>
+        </div>
+        <p class="notes">Không đọc hết 4 card. Nêu một vòng: hiện thực API → nối trang → check phạm vi, seed-reset khi môi trường hỏng. Skill là hướng dẫn cho agent, không phải thư viện runtime.</p>
+      </section>
+
+      <section class="slide top" data-title="Demo tài khoản">
+        <p class="kicker">Demo</p>
+        <h2>Tài khoản &amp; dashboard</h2>
+        <div class="video-slot" data-src="videos/slide7.mp4">
+          <video controls playsinline muted preload="metadata"></video>
+          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/slide7.mp4</code></p>
+        </div>
+      </section>
+
+      <section class="slide top" data-title="Demo phòng">
+        <p class="kicker">Demo</p>
+        <h2>Loại phòng &amp; phòng</h2>
+        <div class="video-slot" data-src="videos/slide8.mp4">
+          <video controls playsinline muted preload="metadata"></video>
+          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/slide8.mp4</code></p>
+        </div>
+      </section>
+
+      <section class="slide top" data-title="Demo đặt phòng">
+        <p class="kicker">Demo</p>
+        <h2>Đặt phòng, thanh toán, hủy &amp; hoàn tiền</h2>
+        <div class="video-slot" data-src="videos/slide9.mp4">
+          <video controls playsinline muted preload="metadata"></video>
+          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/slide9.mp4</code></p>
+        </div>
+      </section>
+
+      <section class="slide thanks" data-title="Cảm ơn">
+        <p class="kicker">IE221 · Nhóm 7</p>
+        <h1>Cảm ơn thầy cô đã lắng nghe</h1>
+        <p class="lede" style="max-width:none">Sẵn sàng trả lời câu hỏi.</p>
+      </section>
+
+    </div>
+
+    <footer class="footer">
+      <div class="progress" id="progress"></div>
+      <span>IE221 · Nhóm 7 · Quản lý Đặt phòng</span>
+      <span class="hint"><kbd>←</kbd> <kbd>→</kbd> · <kbd>N</kbd> ghi chú · <kbd>F</kbd> toàn màn hình</span>
+      <span id="counter">1 / 10</span>
+    </footer>
+  </div>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const progress = document.getElementById("progress");
+    const counter = document.getElementById("counter");
+    let index = 0;
+
+    function pauseVideos() {
+      document.querySelectorAll("video").forEach((video) => video.pause());
+    }
+
+    function show(n) {
+      pauseVideos();
+      index = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((slide, i) => slide.classList.toggle("active", i === index));
+      progress.style.width = ((index + 1) / slides.length) * 100 + "%";
+      counter.textContent = index + 1 + " / " + slides.length;
+      history.replaceState(null, "", "#" + (index + 1));
+    }
+
+    function fromHash() {
+      const n = parseInt(location.hash.replace("#", ""), 10);
+      show(Number.isFinite(n) ? n - 1 : 0);
+    }
+
+    document.querySelectorAll(".video-slot").forEach((slot) => {
+      const src = slot.dataset.src;
+      const video = slot.querySelector("video");
+      if (!src || !video) return;
+      video.muted = true;
+      video.defaultMuted = true;
+      video.src = src;
+      video.addEventListener("loadeddata", () => slot.classList.add("has-video"));
+      video.addEventListener("error", () => slot.classList.remove("has-video"));
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const next = ["ArrowRight", "ArrowDown", "PageDown", " ", "Enter"];
+      const prev = ["ArrowLeft", "ArrowUp", "PageUp", "Backspace"];
+      if (event.target.tagName === "VIDEO" && (event.key === " " || event.key === "Enter")) return;
+      if (next.includes(event.key)) { event.preventDefault(); show(index + 1); }
+      if (prev.includes(event.key)) { event.preventDefault(); show(index - 1); }
+      if (event.key === "Home") { event.preventDefault(); show(0); }
+      if (event.key === "End") { event.preventDefault(); show(slides.length - 1); }
+      if (event.key === "n" || event.key === "N") document.body.classList.toggle("show-notes");
+      if (event.key === "f" || event.key === "F") {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+      }
+    });
+
+    document.querySelector(".slides").addEventListener("click", (event) => {
+      if (event.target.closest("video")) return;
+      const x = event.clientX / window.innerWidth;
+      if (x > 0.65) show(index + 1);
+      else if (x < 0.35) show(index - 1);
+    });
+
+    window.addEventListener("hashchange", fromHash);
+    fromHash();
+  </script>
+</body>
+</html>

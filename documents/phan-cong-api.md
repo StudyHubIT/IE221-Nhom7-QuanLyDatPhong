@@ -13,21 +13,22 @@ Tham khảo bắt buộc trước khi code: [`screens.md`](./screens.md) (mô t�
 
 | Thành viên | Việc |
 |---|---|
-| Long | Phân công, đã làm UI (mock-data + toàn bộ trang), review/merge PR của mọi người, sau đó soạn báo cáo |
+| Long | Task 0 — Nền tảng DB & Auth (scaffold API). Checklist: [`phan_cong_long.md`](../phan_cong_long.md). Phân công, review/merge PR, soạn báo cáo |
 | Tịnh | Task A — Khách hàng, Tài khoản admin & Dashboard |
 | Hoàng | Task B — Loại phòng & Phòng |
 | Vũ | Task C — Đặt phòng & Thanh toán |
 | Hiệp | Task D — Hủy đặt phòng & Hoàn tiền |
 
-> Chi tiết từng task nằm ở file riêng từng người — Tịnh [`phan_cong_tinh.md`](../phan_cong_tinh.md),
+> Chi tiết từng task nằm ở file riêng từng người — Long [`phan_cong_long.md`](../phan_cong_long.md)
+> (Task 0), Tịnh [`phan_cong_tinh.md`](../phan_cong_tinh.md),
 > Hoàng [`phan_cong_hoang.md`](../phan_cong_hoang.md), Vũ [`phan_cong_vu.md`](../phan_cong_vu.md),
 > Hiệp [`phan_cong_hiep.md`](../phan_cong_hiep.md). Ma trận endpoint + quy trình nhóm:
 > [`phan_cong_cong_viec.md`](../phan_cong_cong_viec.md). File này chỉ giữ lại Task 0 (đã xong)
-> để tham khảo lịch sử, tránh trùng lặp nội dung dễ lệch nhau khi cập nhật.
+> để tham khảo lịch sử; checklist việc Long đã làm nằm ở `phan_cong_long.md`.
 
 ## Task 0 — Nền tảng DB & Auth (✅ đã xong, đã merge)
 
-**Người làm**: một người nhận trước (đề xuất Long hoặc người rành backend nhất trong 4 bạn), merge xong
+**Người làm**: Long — checklist chi tiết ở [`phan_cong_long.md`](../phan_cong_long.md). Merge xong
 mới bắt đầu chia việc Task A–D, tránh 2 người cùng tạo Alembic migration → conflict revision.
 
 - Viết SQLAlchemy model cho toàn bộ bảng trong `documents/sql/postgres/init_tables.sql`:

@@ -1,0 +1,107 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'darkMode': true, 'background': 'transparent', 'primaryColor': '#1b2740', 'primaryTextColor': '#f6f3ec', 'primaryBorderColor': '#d4b15a', 'lineColor': '#d4b15a', 'tertiaryColor': '#0e1626', 'mainBkg': '#121a2b', 'nodeBorder': '#d4b15a', 'secondaryColor': '#121a2b', 'tertiaryTextColor': '#f6f3ec', 'titleColor': '#d4b15a', 'attributeBackgroundColorOdd': '#0e1626', 'attributeBackgroundColorEven': '#162033'}}}%%
+erDiagram
+    %% ===== USER & AUTH =====
+    ADMINS {
+        int id PK
+        nvarchar email UK
+        nvarchar password_hash
+        nvarchar full_name
+        nvarchar status
+    }
+
+    ROLES {
+        int id PK
+        nvarchar code UK
+        nvarchar name
+    }
+
+    PERMISSIONS {
+        int id PK
+        nvarchar code UK
+        nvarchar description
+    }
+
+    ADMIN_ROLES {
+        int admin_id PK, FK
+        int role_id PK, FK
+    }
+
+    ROLE_PERMISSIONS {
+        int role_id PK, FK
+        int permission_id PK, FK
+    }
+
+    USERS {
+        int id PK
+        nvarchar email UK
+        nvarchar phone
+        nvarchar password_hash
+        nvarchar full_name
+        nvarchar status
+    }
+
+    %% ===== ROOM & BOOKING =====
+    LOAIPHONG {
+        int id PK
+        nvarchar ten_loai
+        decimal gia_co_ban
+    }
+
+    PHONG {
+        int id PK
+        nvarchar so_phong UK
+        int loai_phong_id FK
+        nvarchar trang_thai
+    }
+
+    DATPHONG {
+        int id PK
+        int user_id FK
+        datetime check_in
+        datetime check_out
+        nvarchar trang_thai
+        datetime created_at
+    }
+
+    CT_DATPHONG {
+        int id PK
+        int datphong_id FK
+        int phong_id FK
+        decimal don_gia
+    }
+
+    %% ===== PAYMENT =====
+    PAYMENTS {
+        int id PK
+        int booking_id FK
+        int user_id FK
+        decimal amount
+        nvarchar method
+        nvarchar status
+        datetime created_at
+    }
+
+    REFUNDS {
+        int id PK
+        int payment_id FK
+        decimal refund_amount
+        nvarchar status
+        nvarchar reason
+        int approved_by FK
+        datetime created_at
+    }
+
+    ADMINS ||--o{ ADMIN_ROLES : "có"
+    ROLES ||--o{ ADMIN_ROLES : "gán cho"
+    ROLES ||--o{ ROLE_PERMISSIONS : "có"
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : "gán cho"
+
+    LOAIPHONG ||--o{ PHONG : "phân loại"
+    USERS ||--o{ DATPHONG : "đặt"
+    DATPHONG ||--o{ CT_DATPHONG : "chi tiết"
+    PHONG ||--o{ CT_DATPHONG : "được đặt"
+
+    DATPHONG ||--o{ PAYMENTS : "thanh toán"
+    USERS ||--o{ PAYMENTS : "thực hiện"
+    PAYMENTS ||--o{ REFUNDS : "hoàn tiền"
+    ADMINS |o--o{ REFUNDS : "duyệt"

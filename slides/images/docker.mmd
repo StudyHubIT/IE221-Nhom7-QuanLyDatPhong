@@ -1,0 +1,15 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'darkMode': true, 'background': 'transparent', 'primaryColor': '#1b2740', 'primaryTextColor': '#f6f3ec', 'primaryBorderColor': '#d4b15a', 'lineColor': '#d4b15a', 'secondaryColor': '#121a2b', 'tertiaryColor': '#0e1626', 'mainBkg': '#121a2b', 'nodeBorder': '#d4b15a', 'clusterBkg': '#0e1626', 'clusterBorder': '#243049', 'titleColor': '#d4b15a', 'edgeLabelBackground': '#121a2b', 'tertiaryTextColor': '#f6f3ec'}}}%%
+flowchart TB
+  browser(["Trình duyệt"])
+
+  subgraph compose["Docker Compose"]
+    direction LR
+    web["web<br/>Next.js · pnpm dev<br/>:3001 → :3000"]
+    api["api<br/>FastAPI · uvicorn<br/>alembic upgrade head<br/>:8001 → :8000"]
+    db["db<br/>PostgreSQL 16<br/>:5432"]
+  end
+
+  browser -->|"localhost:3001"| web
+  browser -->|"localhost:8001 /docs"| api
+  web -->|"INTERNAL_API_URL<br/>api:8000"| api
+  api -->|"DATABASE_URL<br/>db:5432"| db
