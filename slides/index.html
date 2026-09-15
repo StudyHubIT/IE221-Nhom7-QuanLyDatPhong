@@ -133,6 +133,13 @@
       margin-bottom: 0.7rem;
     }
 
+    .card h3.skill-name {
+      text-transform: none;
+      letter-spacing: 0.02em;
+      font-size: 0.95rem;
+      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    }
+
     .card p, .card li {
       color: var(--text);
       font-size: 1.02rem;
@@ -229,21 +236,49 @@
     .stack .box span { display: block; margin-top: 0.28rem; color: var(--muted); font-size: 0.86rem; }
     .stack .arrow { color: var(--gold); align-self: center; font-size: 1.25rem; }
 
-    .erd-groups { margin-bottom: 1.1rem; }
+    .erd-slide h2 { margin-bottom: 0.55rem; }
 
-    .tbl-list {
+    .erd-figure {
+      flex: 1;
+      min-height: 0;
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
     }
 
-    .tbl-list span {
-      border: 1px solid var(--line);
-      background: #0e1626;
-      border-radius: 8px;
-      padding: 0.28rem 0.55rem;
-      font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-      font-size: 0.82rem;
+    .erd-figure img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .arch-slide h2 { margin-bottom: 0.45rem; }
+
+    .arch-figure {
+      flex: 0 0 auto;
+      margin: 0 0 0.75rem;
+    }
+
+    .arch-figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 26vh;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .arch-slide table.libs {
+      font-size: 0.9rem;
+    }
+
+    .arch-slide table.libs th,
+    .arch-slide table.libs td {
+      padding: 0.34rem 0.5rem 0.34rem 0;
     }
 
     .video-slot {
@@ -376,14 +411,14 @@
             <tr><th>Họ và tên</th><th>MSSV</th></tr>
           </thead>
           <tbody>
-            <tr><td>Harry Le</td><td class="id">…………</td></tr>
-            <tr><td>Đào Duy Tịnh</td><td class="id">…………</td></tr>
-            <tr><td>Lê Tiến Hoàng</td><td class="id">…………</td></tr>
-            <tr><td>La Anh Vũ</td><td class="id">…………</td></tr>
-            <tr><td>Lê Ngọc Hiệp</td><td class="id">…………</td></tr>
+            <tr><td>Lê Tiến Hoàng</td><td class="id">25410217</td></tr>
+            <tr><td>La Anh Vũ</td><td class="id">25410337</td></tr>
+            <tr><td>Lê Ngọc Hiệp</td><td class="id">25410209</td></tr>
+            <tr><td>Đào Duy Tịnh</td><td class="id">25410318</td></tr>
+            <tr><td>Lê Kim Long</td><td class="id">25410247</td></tr>
           </tbody>
         </table>
-        <p class="notes">Điền MSSV (và họ tên Long nếu cần) trước khi chiếu. Không đọc hết bảng — chỉ nêu đề tài rồi sang nội dung.</p>
+        <p class="notes">Không đọc hết bảng — chỉ nêu đề tài rồi sang nội dung.</p>
       </section>
 
       <section class="slide" data-title="Nội dung">
@@ -392,45 +427,20 @@
         <ul class="bullets">
           <li>Mô hình dữ liệu (ERD)</li>
           <li>Phạm vi đã hiện thực</li>
-          <li>Kiến trúc source code</li>
-          <li>Kiến trúc backend &amp; thư viện Python</li>
+          <li>Kiến trúc</li>
+          <li>Bốn skill Claude Code</li>
           <li>Demo: tài khoản &amp; dashboard</li>
           <li>Demo: loại phòng &amp; phòng</li>
           <li>Demo: đặt phòng, thanh toán, hủy &amp; hoàn tiền</li>
         </ul>
       </section>
 
-      <section class="slide top" data-title="ERD">
+      <section class="slide top erd-slide" data-title="ERD">
         <p class="kicker">Mô hình dữ liệu</p>
-        <h2>Ba nhóm bảng, vòng đời đặt phòng nằm ở giữa</h2>
-        <div class="grid-3 erd-groups">
-          <article class="card">
-            <h3>User &amp; Auth</h3>
-            <div class="tbl-list">
-              <span>USERS</span><span>ADMINS</span><span>ROLES</span><span>PERMISSIONS</span>
-            </div>
-            <p style="margin-top:0.75rem">Khách và admin là hai thực thể độc lập. Admin ↔ role ↔ permission là N:N.</p>
-          </article>
-          <article class="card">
-            <h3>Phòng &amp; đặt</h3>
-            <div class="tbl-list">
-              <span>LOAIPHONG</span><span>PHONG</span><span>DATPHONG</span><span>CT_DATPHONG</span>
-            </div>
-            <p style="margin-top:0.75rem">Một loại có nhiều phòng. Một đơn đặt nhiều phòng qua chi tiết; unique cặp (đơn, phòng).</p>
-          </article>
-          <article class="card">
-            <h3>Tiền</h3>
-            <div class="tbl-list">
-              <span>PAYMENTS</span><span>REFUNDS</span>
-            </div>
-            <p style="margin-top:0.75rem">Thanh toán gắn đơn. Hoàn tiền gắn payment; <span class="mono">approved_by</span> trỏ admin, có thể null.</p>
-          </article>
-        </div>
-        <ul class="bullets">
-          <li>Luồng chính: <span class="mono">USERS → DATPHONG → CT_DATPHONG → PHONG</span>, rồi <span class="mono">PAYMENTS → REFUNDS</span>.</li>
-          <li>Trạng thái then chốt: phòng <span class="mono">AVAILABLE / MAINTENANCE</span>, đơn <span class="mono">PENDING → CONFIRMED → CHECKED_IN → CHECKED_OUT / CANCELLED</span>, refund <span class="mono">REQUESTED / APPROVED / REJECTED</span>.</li>
-        </ul>
-        <p class="notes">Nhấn 3 nhóm rồi 2 câu quan hệ. Không đọc từng cột. Nếu GV hỏi chi tiết, nói USERS/ADMINS không kế thừa nhau.</p>
+        <figure class="erd-figure">
+          <img src="images/erd.png" alt="ERD hệ thống quản lý đặt phòng: User &amp; Auth, Phòng &amp; đặt, Thanh toán" />
+        </figure>
+        <p class="notes">Chỉ chiếu sơ đồ. Nhấn 3 nhóm (auth / phòng-đặt / tiền) rồi luồng USERS → DATPHONG → CT_DATPHONG → PHONG, rồi PAYMENTS → REFUNDS. Không đọc từng cột. Nếu GV hỏi chi tiết, nói USERS/ADMINS không kế thừa nhau.</p>
       </section>
 
       <section class="slide" data-title="Phạm vi">
@@ -460,41 +470,11 @@
         <p class="notes">Đây là scope đã ship. Hai quyết định nghiệp vụ: thanh toán giả lập, hủy tự phục vụ.</p>
       </section>
 
-      <section class="slide" data-title="Kiến trúc source">
-        <p class="kicker">Kiến trúc source code</p>
-        <h2>Monorepo: web mỏng, backend Python là lõi</h2>
-        <div class="grid-2">
-          <div>
-            <div class="stack" style="margin-bottom:1.1rem">
-              <div class="box"><strong>Web</strong><span>TypeScript · Next.js<br>:3001</span></div>
-              <div class="arrow">→</div>
-              <div class="box"><strong>API</strong><span>Python · FastAPI<br>:8001</span></div>
-              <div class="arrow">→</div>
-              <div class="box"><strong>DB</strong><span>PostgreSQL<br>Docker</span></div>
-            </div>
-            <article class="card">
-              <h3>Frontend &amp; Docker — nói ngắn</h3>
-              <p><span class="mono">apps/web</span>: TypeScript, Next.js App Router, gọi REST qua <span class="mono">apiFetch</span>.</p>
-              <p style="margin-top:0.55rem">Docker Compose chạy 3 service: <span class="mono">web</span>, <span class="mono">api</span> (alembic upgrade rồi uvicorn), <span class="mono">db</span>.</p>
-            </article>
-          </div>
-          <article class="card">
-            <h3>Backend <span class="mono">backend/app</span></h3>
-            <pre class="tree"><b>main.py</b>          FastAPI + CORS + router
-<b>core/</b>            config, DB session, token
-<b>models/</b>          SQLAlchemy ↔ bảng Postgres
-<b>schemas/</b>         Pydantic = JSON in/out
-<b>api/deps.py</b>      CurrentUser / CurrentAdmin
-<b>api/v1/</b>          auth, catalog, bookings, admin</pre>
-            <p style="margin-top:0.85rem">Một request: router → auth/DB dependency → query model → trả schema.</p>
-          </article>
-        </div>
-        <p class="notes">FE chỉ 2 câu. Docker 1 câu. Còn lại chỉ cây thư mục backend rồi sang slide thư viện.</p>
-      </section>
-
-      <section class="slide top" data-title="Thư viện backend">
-        <p class="kicker">Backend Python</p>
-        <h2>Thư viện lõi và việc từng thứ đảm nhận</h2>
+      <section class="slide top arch-slide" data-title="Kiến trúc">
+        <h2>Kiến trúc</h2>
+        <figure class="arch-figure">
+          <img src="images/docker.jpg" alt="Docker Compose: web Next.js :3001 → api FastAPI :8001 → db PostgreSQL 16 :5432" />
+        </figure>
         <table class="libs">
           <thead>
             <tr><th>Thư viện</th><th>Mục đích trong đồ án</th></tr>
@@ -512,33 +492,58 @@
             <tr><td>pytest + httpx</td><td>Test API (<span class="mono">backend/tests</span>).</td></tr>
           </tbody>
         </table>
-        <p class="notes">Nhấn FastAPI + Pydantic + SQLAlchemy/Alembic là bộ ba. Swagger để GV thấy API. Poetry = cách cài, không phải runtime request.</p>
+        <p class="notes">Sơ đồ 3 container trước. Thư viện: nhấn FastAPI + Pydantic + SQLAlchemy/Alembic. Swagger để GV thấy API. Poetry = cách cài, không phải runtime request.</p>
+      </section>
+
+      <section class="slide top" data-title="Skills">
+        <p class="kicker">Claude Code</p>
+        <h2>Bốn skill gắn với luồng làm việc của nhóm</h2>
+        <p class="lede" style="margin:0 0 1.2rem;max-width:52ch">Nằm ở <span class="mono">.claude/skills/</span>. Mô tả việc bằng lời — agent tự nhận skill và làm đúng convention repo.</p>
+        <div class="grid-2">
+          <article class="card">
+            <h3 class="skill-name">add-feature-endpoint</h3>
+            <p>Hiện thực 1 endpoint FastAPI: model → schema → router. Thay stub bằng query SQLAlchemy, không bịa field ngoài OpenAPI.</p>
+          </article>
+          <article class="card">
+            <h3 class="skill-name">wire-frontend-page</h3>
+            <p>Nối 1 trang <span class="mono">apps/web</span> từ <span class="mono">mock-data</span> sang <span class="mono">apiFetch</span>. Giữ nguyên UI; chỉ nối khi backend đã hết stub.</p>
+          </article>
+          <article class="card">
+            <h3 class="skill-name">task-scope-check</h3>
+            <p>Audit task A/B/C/D: endpoint nào còn stub, trang nào chưa nối API, có lỡ đụng phạm vi người khác không. Chỉ đọc, không sửa code.</p>
+          </article>
+          <article class="card">
+            <h3 class="skill-name">seed-reset</h3>
+            <p>Reset stack dev (Postgres + API + Next.js) khi DB lệch state. Hỏi xác nhận trước khi <span class="mono">docker compose down</span>, rồi seed lại.</p>
+          </article>
+        </div>
+        <p class="notes">Không đọc hết 4 card. Nêu một vòng: hiện thực API → nối trang → check phạm vi; seed-reset khi môi trường hỏng. Skill là hướng dẫn cho agent, không phải thư viện runtime.</p>
       </section>
 
       <section class="slide top" data-title="Demo tài khoản">
         <p class="kicker">Demo</p>
         <h2>Tài khoản &amp; dashboard</h2>
-        <div class="video-slot" data-src="videos/tai-khoan-dashboard.mp4">
-          <video controls playsinline preload="metadata"></video>
-          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/tai-khoan-dashboard.mp4</code></p>
+        <div class="video-slot" data-src="videos/slide7.mp4">
+          <video controls playsinline muted preload="metadata"></video>
+          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/slide7.mp4</code></p>
         </div>
       </section>
 
       <section class="slide top" data-title="Demo phòng">
         <p class="kicker">Demo</p>
         <h2>Loại phòng &amp; phòng</h2>
-        <div class="video-slot" data-src="videos/loai-phong-phong.mp4">
-          <video controls playsinline preload="metadata"></video>
-          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/loai-phong-phong.mp4</code></p>
+        <div class="video-slot" data-src="videos/slide8.mp4">
+          <video controls playsinline muted preload="metadata"></video>
+          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/slide8.mp4</code></p>
         </div>
       </section>
 
       <section class="slide top" data-title="Demo đặt phòng">
         <p class="kicker">Demo</p>
         <h2>Đặt phòng, thanh toán, hủy &amp; hoàn tiền</h2>
-        <div class="video-slot" data-src="videos/dat-phong-huy-hoan-tien.mp4">
-          <video controls playsinline preload="metadata"></video>
-          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/dat-phong-huy-hoan-tien.mp4</code></p>
+        <div class="video-slot" data-src="videos/slide9.mp4">
+          <video controls playsinline muted preload="metadata"></video>
+          <p class="video-placeholder">Chưa gắn video.<br><code>slides/videos/slide9.mp4</code></p>
         </div>
       </section>
 
@@ -586,6 +591,8 @@
       const src = slot.dataset.src;
       const video = slot.querySelector("video");
       if (!src || !video) return;
+      video.muted = true;
+      video.defaultMuted = true;
       video.src = src;
       video.addEventListener("loadeddata", () => slot.classList.add("has-video"));
       video.addEventListener("error", () => slot.classList.remove("has-video"));
