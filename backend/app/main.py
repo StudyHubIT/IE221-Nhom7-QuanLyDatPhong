@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.pages import router as pages_router
 from app.api.v1 import admin as admin_api
 from app.api.v1.auth import router as auth_router
 from app.api.v1.bookings import router as bookings_router
@@ -51,7 +50,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(pages_router)
 app.include_router(auth_router)
 app.include_router(room_types_router)
 app.include_router(rooms_router)

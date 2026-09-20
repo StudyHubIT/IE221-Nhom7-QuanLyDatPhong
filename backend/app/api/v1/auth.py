@@ -55,7 +55,6 @@ def login(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(_user: CurrentUser) -> None:
-    # Token is stateless (unsigned base64), nothing to revoke server-side.
     return None
 
 
