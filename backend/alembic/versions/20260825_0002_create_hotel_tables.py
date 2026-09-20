@@ -1,7 +1,7 @@
 """create hotel tables
 
 Revision ID: 20260825_0002
-Revises: 20260727_0001
+Revises:
 Create Date: 2026-08-25 09:48:56.317253
 """
 import sqlalchemy as sa
@@ -9,7 +9,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20260825_0002"
-down_revision = "20260727_0001"
+down_revision = None
 branch_labels = None
 depends_on = None
 

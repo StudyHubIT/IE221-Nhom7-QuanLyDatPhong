@@ -25,7 +25,7 @@ migrate-docker:
 	docker compose exec api poetry run alembic upgrade head
 
 migration:
-	@if [ -z "$(name)" ]; then echo "Usage: make migration name=create_pages_table"; exit 1; fi
+	@if [ -z "$(name)" ]; then echo "Usage: make migration name=add_some_column"; exit 1; fi
 	cd backend && poetry run alembic revision --autogenerate -m "$(name)"
 
 seed:

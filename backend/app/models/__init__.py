@@ -13,11 +13,9 @@ from app.models.hotel import (
     admin_roles,
     role_permissions,
 )
-from app.models.page import Page
 
 __all__ = [
     "Base",
-    "Page",
     "Admin",
     "Booking",
     "BookingItem",

@@ -13,7 +13,6 @@ app/
 ├── schemas/             # Pydantic DTO (request/response JSON)
 └── api/                 # FastAPI router + auth dependency
     ├── deps.py
-    ├── pages.py
     └── v1/              # API phiên bản 1 (`/api/v1/...`)
 ```
 
@@ -63,7 +62,6 @@ Không chứa nghiệp vụ đặt phòng. Mọi router/model đều import từ
 |---|---|
 | `base.py` | `Base(DeclarativeBase)` — metadata chung cho mọi bảng và Alembic. |
 | `hotel.py` | Domain khách sạn: `Admin`, `Role`, `Permission`, `User`, `RoomType`, `Room`, `Booking`, `BookingItem`, `Payment`, `Refund` + bảng trung gian `admin_roles`, `role_permissions`. |
-| `page.py` | Model `Page` còn lại từ scaffold CMS ban đầu (`pages` table). Không thuộc nghiệp vụ đặt phòng. |
 | `__init__.py` | Re-export model để Alembic/`env.py` import một chỗ, đảm bảo metadata đủ khi generate migration. |
 
 Khi ORM và Pydantic trùng tên (`User`, `Room`, …), router alias model: `from app.models.hotel import User as UserModel`.
@@ -79,7 +77,6 @@ Contract với frontend / Swagger: body request, query, response. Tách khỏi O
 | File | Ý nghĩa |
 |---|---|
 | `hotel.py` | Enum (`BookingStatus`, `RoomStatus`, …) và DTO (`LoginRequest`, `Booking`, `Paginated[T]`, …) khớp `openapi.yaml`. |
-| `page.py` | Schema CRUD cho `Page` (scaffold CMS). |
 
 ---
 
@@ -90,7 +87,6 @@ FastAPI router: path, method, status code, `Depends`. Không chứa câu SQL ph�
 | File | Ý nghĩa |
 |---|---|
 | `deps.py` | `CurrentUser` / `CurrentAdmin`: đọc Bearer token, decode, query DB, 401 nếu sai/locked. Router chỉ khai báo type, không parse token lại. |
-| `pages.py` | `GET /api/pages` — leftover CMS, không dùng cho HotelBook. |
 
 ### `api/v1/` — REST API HotelBook
 
@@ -152,7 +148,7 @@ Mọi DTO kế thừa `pydantic.BaseModel`. FastAPI lấy type hint để valida
 | Pattern | Cách dùng trong repo |
 |---|---|
 | Type hint | `email: str`, `phone: str \| None = None` — FastAPI/Pydantic tự 422 nếu sai kiểu. |
-| `ConfigDict(from_attributes=True)` | Cho schema đọc từ ORM (`User`, `RoomType`, `Room`, `AdminAccount`, `PageRead`). Cho phép `Schema.model_validate(row)` thay vì map từng field. |
+| `ConfigDict(from_attributes=True)` | Cho schema đọc từ ORM (`User`, `RoomType`, `Room`, `AdminAccount`). Cho phép `Schema.model_validate(row)` thay vì map từng field. |
 | `str, Enum` | `BookingStatus`, `RoomStatus`, `PaymentStatus`, `PaymentMethod`, `RefundStatus`, `AccountStatus`, `AdminRole` — JSON ra đúng string (`"PENDING"`), không phải int. |
 | `Generic` + `Field` | `Paginated[T]` (`items`, `total`, `page`, `page_size`) — list endpoint dùng chung. `items` dùng `Field(default_factory=list)`. |
 | Write vs Read | `RoomTypeWrite` / `RoomWrite` / `AdminWrite` = body tạo/sửa (không có `id`). `RoomType` / `Room` = response. |
@@ -184,7 +180,6 @@ backend/
 │   ├── env.py               # Kết nối DB + target_metadata = Base.metadata
 │   ├── script.py.mako       # Template file revision mới
 │   └── versions/            # Chuỗi revision đã apply
-│       ├── 20260727_0001_create_pages_table.py
 │       └── 20260825_0002_create_hotel_tables.py
 └── app/                     # Models mà Alembic đọc metadata
 ```
@@ -204,8 +199,7 @@ Linear, một nhánh — **không** tạo revision song song (dễ conflict khi 
 
 | Revision | File | Việc |
 |---|---|---|
-| `20260727_0001` | `create_pages_table.py` | Bảng `pages` (scaffold CMS). `down_revision = None`. |
-| `20260825_0002` | `create_hotel_tables.py` | 12 bảng HotelBook + `admin_roles` / `role_permissions`. `down_revision = 20260727_0001`. Autogenerate từ `models/hotel.py`. |
+| `20260825_0002` | `create_hotel_tables.py` | 12 bảng HotelBook + `admin_roles` / `role_permissions`. `down_revision = None`. Autogenerate từ `models/hotel.py`. |
 
 `head` hiện tại = `20260825_0002`. Container `api` chạy `alembic upgrade head` khi start.
 

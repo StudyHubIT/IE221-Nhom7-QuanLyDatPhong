@@ -14,13 +14,6 @@ def test_health_endpoint_reports_ok():
     assert response.json() == {"status": "ok"}
 
 
-def test_list_pages_returns_empty_collection_by_default():
-    response = client.get("/api/pages")
-
-    assert response.status_code == 200
-    assert response.json() == []
-
-
 def test_settings_parses_cors_origins_from_env_string(monkeypatch):
     monkeypatch.setenv("API_CORS_ORIGINS", "http://localhost:3001")
 

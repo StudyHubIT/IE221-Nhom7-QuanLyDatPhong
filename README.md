@@ -73,7 +73,7 @@ pnpm-workspace.yaml
 - `make down` stops the stack
 - `make logs` tails all service logs
 - `make migrate` runs `alembic upgrade head` locally in `backend`
-- `make migration name=create_pages_table` creates a new Alembic revision
+- `make migration name=add_some_column` creates a new Alembic revision
 - `make seed` seeds demo accounts/rooms into PostgreSQL (see below)
 - `make shell-api` opens a shell in the Poetry environment
 - `make shell-web` opens a shell in `apps/web`
@@ -112,8 +112,7 @@ việc mô tả ở [`phan_cong_cong_viec.md`](phan_cong_cong_viec.md) — Claud
 - Public landing page at `/`
 - Admin placeholder at `/admin`
 - API health endpoint at `/health`
-- Pages router at `/api/pages`
-- Initial Alembic migration for the `pages` table
+- Initial Alembic migration for hotel tables
 
 ## Pencil.dev (thiết kế UI bằng AI)
 
