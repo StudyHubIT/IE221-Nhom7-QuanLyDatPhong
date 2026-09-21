@@ -180,6 +180,17 @@
       letter-spacing: 0.06em;
     }
 
+    .advisor {
+      margin-top: 1.5rem;
+      font-size: clamp(0.95rem, 1.35vw, 1.12rem);
+      color: var(--muted);
+    }
+
+    .advisor strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
     table.libs {
       width: 100%;
       border-collapse: collapse;
@@ -405,7 +416,7 @@
       <section class="slide active" data-title="Đề tài">
         <p class="kicker">IE221 · Kỹ thuật lập trình Python · Nhóm 7</p>
         <h1>Hệ thống Quản lý Đặt phòng</h1>
-        <p class="lede">Web đặt phòng khách sạn: phía khách và CMS quản trị, API Python nối PostgreSQL.</p>
+        <p class="lede">Web đặt phòng khách sạn: phía khách và CMS quản trị, API Python kết nối với PostgreSQL.</p>
         <table class="team">
           <thead>
             <tr><th>Họ và tên</th><th>MSSV</th></tr>
@@ -418,6 +429,7 @@
             <tr><td>Lê Kim Long</td><td class="id">25410247</td></tr>
           </tbody>
         </table>
+        <p class="advisor">Giảng viên hướng dẫn : <strong>ThS. Nghi Hoàng Khoa</strong></p>
         <p class="notes">Không đọc hết bảng — chỉ nêu đề tài rồi sang nội dung.</p>
       </section>
 
@@ -444,20 +456,20 @@
       </section>
 
       <section class="slide" data-title="Phạm vi">
-        <p class="kicker">Đã làm xong</p>
-        <h2>End-to-end trên dữ liệu Postgres, không còn mock API</h2>
+        <p class="kicker">Phạm vi đã hiện thực</p>
+        <h2>Chức năng đã hiện thực</h2>
         <div class="grid-2">
           <article class="card">
-            <h3>Nền tảng &amp; khách</h3>
+            <h3>Client</h3>
             <ul>
-              <li>Schema + seed + đăng ký/đăng nhập khách &amp; admin</li>
+              <li>Schema + seed + đăng ký/đăng nhập khách</li>
               <li>Tìm loại phòng / phòng trống theo ngày</li>
               <li>Giỏ → checkout: tạo đơn + chi tiết + thanh toán giả lập (<span class="mono">PAID</span>)</li>
               <li>Lịch sử đơn, khách tự hủy → yêu cầu hoàn tiền</li>
             </ul>
           </article>
           <article class="card">
-            <h3>CMS admin</h3>
+            <h3>CMS</h3>
             <ul>
               <li>Dashboard KPI</li>
               <li>CRUD loại phòng &amp; phòng</li>
@@ -487,9 +499,8 @@
             <tr><td>Pydantic v2</td><td>Validate body/query, serialize JSON, khớp contract OpenAPI.</td></tr>
             <tr><td>pydantic-settings</td><td>Đọc <span class="mono">.env</span>: CORS, <span class="mono">DATABASE_URL</span>.</td></tr>
             <tr><td>SQLAlchemy 2</td><td>ORM: model = bảng, session theo từng request.</td></tr>
-            <tr><td>Alembic</td><td>Migration schema (pages → 12 bảng khách sạn). Container chạy <span class="mono">upgrade head</span>.</td></tr>
+            <tr><td>Alembic</td><td>Migration schema.</td></tr>
             <tr><td>psycopg</td><td>Driver PostgreSQL.</td></tr>
-            <tr><td>pytest + httpx</td><td>Test API (<span class="mono">backend/tests</span>).</td></tr>
           </tbody>
         </table>
         <p class="notes">Sơ đồ 3 container trước. Thư viện: nhấn FastAPI + Pydantic + SQLAlchemy/Alembic. Swagger để GV thấy API. Poetry = cách cài, không phải runtime request.</p>
