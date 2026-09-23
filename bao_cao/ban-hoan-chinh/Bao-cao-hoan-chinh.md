@@ -1,4 +1,4 @@
-<!-- File này được sinh tự động bởi refer_scripts/merge_bao_cao.py vào ngày 2026-09-22. KHÔNG chỉnh sửa trực tiếp file này - hãy sửa nội dung trong noi-dung/ hoặc loi-cam-on.md rồi chạy lại script. -->
+<!-- File này được sinh tự động bởi refer_scripts/merge_bao_cao.py vào ngày 2026-09-23. KHÔNG chỉnh sửa trực tiếp file này - hãy sửa nội dung trong noi-dung/ hoặc loi-cam-on.md rồi chạy lại script. -->
 # DANH MỤC HÌNH ẢNH
 
 [Hình 1.1: Sơ đồ kiến trúc triển khai](#fig-1-1)
